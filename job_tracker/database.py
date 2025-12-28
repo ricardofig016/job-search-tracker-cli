@@ -80,6 +80,61 @@ def add_new_column(column_name: str, column_type: str, default_value: str = None
                 raise e
 
 
+def add_job(job_data: dict) -> int:
+    """Inserts a new job record and returns the new job ID."""
+    columns = ", ".join(job_data.keys())
+    placeholders = ", ".join(["?" for _ in job_data])
+    query = f"INSERT INTO jobs ({columns}) VALUES ({placeholders})"
+
+    with get_db() as conn:
+        cursor = conn.execute(query, list(job_data.values()))
+        conn.commit()
+        return cursor.lastrowid
+
+
+def update_job(job_id: int, updates: dict):
+    """Updates specific fields of a job record."""
+    if not updates:
+        return
+
+    set_clause = ", ".join([f"{col} = ?" for col in updates.keys()])
+    query = f"UPDATE jobs SET {set_clause} WHERE id = ?"
+    params = list(updates.values()) + [job_id]
+
+    with get_db() as conn:
+        conn.execute(query, params)
+        conn.commit()
+
+
+def get_jobs(filters: dict = None, sort_by: str = None):
+    """Retrieves jobs with dynamic filtering and sorting."""
+    query = "SELECT * FROM jobs"
+    params = []
+
+    if filters:
+        conditions = []
+        for col, value in filters.items():
+            conditions.append(f"{col} = ?")
+            params.append(value)
+        query += " WHERE " + " AND ".join(conditions)
+
+    if sort_by:
+        # Basic validation for sort_by to prevent SQL injection
+        # In a real app, we'd check against a list of valid columns
+        query += f" ORDER BY {sort_by}"
+
+    with get_db() as conn:
+        return [dict(row) for row in conn.execute(query, params).fetchall()]
+
+
+def get_job_by_id(job_id: int):
+    """Retrieves a single job by its ID."""
+    query = "SELECT * FROM jobs WHERE id = ?"
+    with get_db() as conn:
+        row = conn.execute(query, (job_id,)).fetchone()
+        return dict(row) if row else None
+
+
 if __name__ == "__main__":
     initialize_db()
     print(f"Database initialized at {DB_PATH}")

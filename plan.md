@@ -79,10 +79,10 @@ This document outlines the step-by-step implementation plan for the Job Search T
 
 ### 2.3. CRUD Operations
 
-- [ ] Implement `add_job(job_data)`: Insert a new record.
-- [ ] Implement `update_job(job_id, updates)`: Update specific fields of a job.
-- [ ] Implement `get_jobs(filters, sort_by)`: Retrieve jobs with dynamic `WHERE` and `ORDER BY` clauses.
-- [ ] Implement `get_job_by_id(job_id)`: Retrieve a single job.
+- [x] Implement `add_job(job_data)`: Insert a new record.
+- [x] Implement `update_job(job_id, updates)`: Update specific fields of a job.
+- [x] Implement `get_jobs(filters, sort_by)`: Retrieve jobs with dynamic `WHERE` and `ORDER BY` clauses.
+- [x] Implement `get_job_by_id(job_id)`: Retrieve a single job.
 
 ## Phase 3: CLI Implementation - Core Functionalities
 
