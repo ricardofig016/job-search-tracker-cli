@@ -1,0 +1,13 @@
+# Database
+jobs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+.venv

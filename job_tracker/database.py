@@ -1,0 +1,59 @@
+import sqlite3
+import os
+from pathlib import Path
+
+DB_NAME = "jobs.db"
+# Database lives in the project root
+DB_PATH = Path(__file__).parent.parent / DB_NAME
+
+
+def get_db_connection():
+    """Returns a connection to the SQLite database."""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def initialize_db():
+    """Creates the jobs table if it doesn't exist."""
+    query = """
+    CREATE TABLE IF NOT EXISTS jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_name TEXT NOT NULL,
+        company_url TEXT,
+        company_linkedin TEXT,
+        role_name TEXT NOT NULL,
+        role_url TEXT,
+        location TEXT,
+        arrangement TEXT CHECK(arrangement IN ('onsite', 'hybrid', 'remote')),
+        type TEXT CHECK(type IN ('fulltime', 'contract', 'part-time', 'freelance')),
+        level TEXT CHECK(level IN ('internship', 'junior', 'mid level', 'senior', 'lead', 'manager')),
+        source TEXT CHECK(source IN ('linkedin', 'company website', 'indeed', 'glassdoor', 'referral', 'other')),
+        recruiter_name TEXT,
+        recruiter_email TEXT,
+        recruiter_linkedin TEXT,
+        expected_salary TEXT,
+        notes TEXT,
+        status TEXT DEFAULT 'applied' CHECK(status IN ('applied', 'rejected', 'accepted', 'interviewing', 'offered')),
+        date_posted DATE,
+        date_applied DATE,
+        followup_date DATE,
+        response_date DATE,
+        interview_date DATE,
+        interview_type TEXT,
+        offer TEXT,
+        rating INTEGER CHECK(rating >= 1 AND rating <= 5),
+        fit INTEGER CHECK(fit >= 1 AND fit <= 5),
+        feedback TEXT,
+        application_method TEXT
+    );
+    """
+    with get_db_connection() as conn:
+        conn.execute(query)
+        conn.commit()
+
+
+if __name__ == "__main__":
+    initialize_db()
+    print(f"Database initialized at {DB_PATH}")

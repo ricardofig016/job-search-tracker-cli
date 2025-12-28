@@ -33,8 +33,8 @@ This document outlines the step-by-step implementation plan for the Job Search T
 
 ### 1.2. Database Design
 
-- [ ] Define the SQLite schema in `job_tracker/database.py`.
-- [ ] Implement a `initialize_db()` function to create the `jobs` table if it doesn't exist.
+- [x] Define the SQLite schema in `job_tracker/database.py`.
+- [x] Implement a `initialize_db()` function to create the `jobs` table if it doesn't exist.
 - **Table Schema (`jobs`)**:
   - `id`: INTEGER PRIMARY KEY AUTOINCREMENT
   - `company_name`: TEXT
