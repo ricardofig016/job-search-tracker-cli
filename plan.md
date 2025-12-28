@@ -6,12 +6,12 @@ This document outlines the step-by-step implementation plan for the Job Search T
 
 ### 1.1. Environment Setup
 
-- [ ] Create a `requirements.txt` file.
+- [x] Create a `requirements.txt` file.
   - **Dependencies**:
     - `typer`: For building the CLI interface (modern, easy to use).
     - `rich`: For beautiful console output (tables, colors).
     - `sqlite3`: Built-in Python library for database interactions.
-- [ ] Create the project structure:
+- [x] Create the project structure:
   ```
   job-search-tracker/
   ├── job_tracker/
