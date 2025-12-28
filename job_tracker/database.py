@@ -1,18 +1,23 @@
 import sqlite3
 import os
 from pathlib import Path
+from contextlib import contextmanager
 
 DB_NAME = "jobs.db"
 # Database lives in the project root
 DB_PATH = Path(__file__).parent.parent / DB_NAME
 
 
-def get_db_connection():
-    """Returns a connection to the SQLite database."""
+@contextmanager
+def get_db():
+    """Context manager for database connection. Ensures connection is closed."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def initialize_db():
@@ -49,7 +54,7 @@ def initialize_db():
         application_method TEXT
     );
     """
-    with get_db_connection() as conn:
+    with get_db() as conn:
         conn.execute(query)
         conn.commit()
 

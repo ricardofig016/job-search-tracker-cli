@@ -69,7 +69,7 @@ This document outlines the step-by-step implementation plan for the Job Search T
 
 ### 2.1. Database Connection
 
-- [ ] Implement context manager for SQLite connection in `database.py`.
+- [x] Implement context manager for SQLite connection in `database.py`.
 
 ### 2.2. Schema Migration Support
 
