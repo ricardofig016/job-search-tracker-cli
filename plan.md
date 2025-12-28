@@ -93,10 +93,10 @@ This document outlines the step-by-step implementation plan for the Job Search T
 
 ### 3.2. Feature 1: Add New Jobs
 
-- [ ] Implement `add` command in `commands/add.py`.
-- [ ] Use `typer.prompt` to interactively ask for essential fields (Company, Role, Status).
-- [ ] Allow optional fields to be passed via flags or skipped.
-- [ ] Auto-fill `date_applied` with today's date if not provided.
+- [x] Implement `add` command in `commands/add.py`.
+- [x] Use `typer.prompt` to interactively ask for essential fields (Company, Role, Status).
+- [x] Allow optional fields to be passed via flags or skipped.
+- [x] Auto-fill `date_applied` with today's date if not provided.
 
 ### 3.3. Feature 2: Edit Existing Jobs
 
