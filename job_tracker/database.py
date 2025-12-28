@@ -59,6 +59,27 @@ def initialize_db():
         conn.commit()
 
 
+def add_new_column(column_name: str, column_type: str, default_value: str = None):
+    """Adds a new column to the jobs table dynamically."""
+    # Basic validation to ensure column_name is alphanumeric/underscore
+    if not column_name.replace("_", "").isalnum():
+        raise ValueError("Invalid column name. Use only alphanumeric characters and underscores.")
+
+    query = f"ALTER TABLE jobs ADD COLUMN {column_name} {column_type}"
+    if default_value is not None:
+        query += f" DEFAULT '{default_value}'"
+
+    with get_db() as conn:
+        try:
+            conn.execute(query)
+            conn.commit()
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" in str(e):
+                print(f"Column '{column_name}' already exists.")
+            else:
+                raise e
+
+
 if __name__ == "__main__":
     initialize_db()
     print(f"Database initialized at {DB_PATH}")

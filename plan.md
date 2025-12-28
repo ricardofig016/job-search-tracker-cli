@@ -73,7 +73,7 @@ This document outlines the step-by-step implementation plan for the Job Search T
 
 ### 2.2. Schema Migration Support
 
-- [ ] Implement a function `add_new_column(column_name, column_type, default_value)` in `database.py`.
+- [x] Implement a function `add_new_column(column_name, column_type, default_value)` in `database.py`.
   - This allows adding columns dynamically as requested.
   - Logic: Execute `ALTER TABLE jobs ADD COLUMN {column_name} {column_type} DEFAULT {default_value}`.
 
