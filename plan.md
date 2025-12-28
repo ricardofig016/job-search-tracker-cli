@@ -88,8 +88,8 @@ This document outlines the step-by-step implementation plan for the Job Search T
 
 ### 3.1. Main Entry Point
 
-- [ ] Setup `job_tracker/main.py` using `typer.Typer`.
-- [ ] Define the main callback to handle global flags if any.
+- [x] Setup `job_tracker/main.py` using `typer.Typer`.
+- [x] Define the main callback to handle global flags if any.
 
 ### 3.2. Feature 1: Add New Jobs
 
