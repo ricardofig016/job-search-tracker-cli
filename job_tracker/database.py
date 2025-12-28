@@ -135,6 +135,14 @@ def get_job_by_id(job_id: int):
         return dict(row) if row else None
 
 
+def delete_job_by_id(job_id: int):
+    """Deletes a single job by its ID."""
+    query = "DELETE FROM jobs WHERE id = ?"
+    with get_db() as conn:
+        conn.execute(query, (job_id,))
+        conn.commit()
+
+
 if __name__ == "__main__":
     initialize_db()
     print(f"Database initialized at {DB_PATH}")
