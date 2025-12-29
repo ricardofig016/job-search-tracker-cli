@@ -112,34 +112,33 @@ This document outlines the step-by-step implementation plan for the Job Search T
 
 Implementing complex filtering via simple CLI flags can become unwieldy. We will implement a **Hybrid Query Approach**:
 
-- **Flags** for common, simple filters (e.g., `--status`).
 - **A "Query String" parser** for complex logic (e.g., `--filter "rating>=4 AND company~google"`).
 - **Interactive Mode** (optional) if no arguments are provided to `view`.
 
 #### Logic Implementation in `utils.py` & `database.py`:
 
-- [ ] **Filter Parser**: Create a utility to parse filter strings into SQL `WHERE` clauses.
+- [x] **Filter Parser**: Create a utility to parse filter strings into SQL `WHERE` clauses.
   - **Operators**: `==`, `!=`, `>=`, `<=`, `>`, `<`.
   - **Substring**: Use `~` or `:` for `LIKE %value%`.
   - **Logic**: Support `AND` / `OR` keywords.
   - **Ranges**: Support `col:[min-max]` syntax.
-- [ ] **Multilevel Sort Parser**: Handle a list of sort instructions (e.g., `['date_applied:desc', 'rating:asc']`).
-- [ ] **Column Selector**: Implement a mapping of "short names" to DB columns to allow `--show company,role,status`.
+- [x] **Multilevel Sort Parser**: Handle a list of sort instructions (e.g., `['date_applied:desc', 'rating:asc']`).
+- [x] **Column Selector**: Implement a mapping of "short names" to DB columns to allow `--show company,role,status`.
 
 ### 3.5. Feature 3: Visualize Applications (`view`)
 
-- [ ] **Command Signature**: `view [QUERY] --filter TEXT --sort TEXT --show TEXT --hide TEXT --export-csv FILENAME`.
-- [ ] **Filtering Logic**:
+- [x] **Command Signature**: `view [QUERY] --filter TEXT --sort TEXT --show TEXT --hide TEXT --export --output FILENAME`.
+- [x] **Filtering Logic**:
   - Combine positional `QUERY` and multiple `--filter` flags.
   - Default logic is `AND`, but allow `OR` within the query string.
-- [ ] **Sorting**: Support multiple `--sort` flags for multilevel sorting (e.g., `--sort date:desc --sort rating:desc`).
-- [ ] **Column Management**:
+- [x] **Sorting**: Support multiple `--sort` flags for multilevel sorting (e.g., `--sort date:desc --sort rating:desc`).
+- [x] **Column Management**:
   - **Sensible Defaults**: ID, Company, Role, Status, Date Applied.
   - Use `--show` to add columns and `--hide` to remove them.
   - Use `--all` to show every column (useful for CSV export).
-- [ ] **Output**:
+- [x] **Output**:
   - **Rich Table**: Use `rich.table` with dynamic columns based on selection.
-  - **CSV Export**: Ensure all filtered/sorted data is exported correctly.
+  - **CSV Export**: Use `--export` (or `-e`) to enable export, and `--output` (or `-o`) to specify the filename (defaults to `output.csv`).
 
 ### 3.6. Feature 4: Statistics (`stats`)
 

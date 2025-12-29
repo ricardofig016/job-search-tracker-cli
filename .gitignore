@@ -11,3 +11,6 @@ ENV/
 env/
 .env
 .venv
+
+# Outputs
+*.csv
