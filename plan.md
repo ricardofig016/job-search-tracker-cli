@@ -12,7 +12,8 @@ This document outlines the step-by-step implementation plan for the Job Search T
     - `rich`: For beautiful console output (tables, colors).
     - `sqlite3`: Built-in Python library for database interactions.
 - [x] Create the project structure:
-  ```
+
+  ```python
   job-search-tracker/
   ├── job_tracker/
   │   ├── __init__.py
@@ -116,7 +117,7 @@ Implementing complex filtering via simple CLI flags can become unwieldy. We will
 - **A "Query String" parser** for complex logic (e.g., `--filter "rating>=4 AND company~google"`).
 - **Interactive Mode** (optional) if no arguments are provided to `view`.
 
-#### Logic Implementation in `utils.py` & `database.py`:
+#### Logic Implementation in `utils.py` & `database.py`
 
 - [x] **Filter Parser**: Create a utility to parse filter strings into SQL `WHERE` clauses.
   - **Operators**: `==`, `!=`, `>=`, `<=`, `>`, `<`.
