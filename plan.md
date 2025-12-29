@@ -108,26 +108,47 @@ This document outlines the step-by-step implementation plan for the Job Search T
   3. Prompt user for which field to update in a loop until users selects "done".
   4. Commit changes to DB.
 
-### 3.4. Feature 3: Visualize Applications
+### 3.4. Advanced Query and Filtering Engine
 
-- [ ] Implement `list` (or `view`) command in `commands/view.py`.
-- [ ] **Filtering**: Add flags like `--status`, `--company`, `--date-applied`.
-- [ ] **Sorting**: Add `--sort` flag (e.g., `date_applied`, `rating`).
-- [ ] **Output Modes**:
-  - **Console**: Use `rich.table.Table` to display data nicely. Truncate long text.
-  - **CSV**: Add `--export-csv [filename]` flag. Use Python's `csv` module to write the query results to a file.
+Implementing complex filtering via simple CLI flags can become unwieldy. We will implement a **Hybrid Query Approach**:
 
-### 3.5. Feature 4: Statistics
+- **Flags** for common, simple filters (e.g., `--status`).
+- **A "Query String" parser** for complex logic (e.g., `--filter "rating>=4 AND company~google"`).
+- **Interactive Mode** (optional) if no arguments are provided to `view`.
 
-- [ ] Implement `stats` command in `commands/stats.py`.
-- [ ] **Filtering**: Allow same filters as `view` (e.g., stats for "remote" jobs only).
-- [ ] **Metrics to calculate**:
-  - Total applications.
-  - Breakdown by Status (Applied vs Rejected vs Accepted).
-  - Breakdown by Arrangement (Remote/Hybrid/Onsite).
-  - Average Rating/Fit.
-  - Applications per week/month.
-- [ ] Display results using `rich` panels or simple text.
+#### Logic Implementation in `utils.py` & `database.py`:
+
+- [ ] **Filter Parser**: Create a utility to parse filter strings into SQL `WHERE` clauses.
+  - **Operators**: `==`, `!=`, `>=`, `<=`, `>`, `<`.
+  - **Substring**: Use `~` or `:` for `LIKE %value%`.
+  - **Logic**: Support `AND` / `OR` keywords.
+  - **Ranges**: Support `col:[min-max]` syntax.
+- [ ] **Multilevel Sort Parser**: Handle a list of sort instructions (e.g., `['date_applied:desc', 'rating:asc']`).
+- [ ] **Column Selector**: Implement a mapping of "short names" to DB columns to allow `--show company,role,status`.
+
+### 3.5. Feature 3: Visualize Applications (`view`)
+
+- [ ] **Command Signature**: `view [QUERY] --filter TEXT --sort TEXT --show TEXT --hide TEXT --export-csv FILENAME`.
+- [ ] **Filtering Logic**:
+  - Combine positional `QUERY` and multiple `--filter` flags.
+  - Default logic is `AND`, but allow `OR` within the query string.
+- [ ] **Sorting**: Support multiple `--sort` flags for multilevel sorting (e.g., `--sort date:desc --sort rating:desc`).
+- [ ] **Column Management**:
+  - **Sensible Defaults**: ID, Company, Role, Status, Date Applied.
+  - Use `--show` to add columns and `--hide` to remove them.
+  - Use `--all` to show every column (useful for CSV export).
+- [ ] **Output**:
+  - **Rich Table**: Use `rich.table` with dynamic columns based on selection.
+  - **CSV Export**: Ensure all filtered/sorted data is exported correctly.
+
+### 3.6. Feature 4: Statistics (`stats`)
+
+- [ ] **Consistency**: Use the exact same `Filter Parser` as the `view` command.
+- [ ] **Metrics**:
+  - Calculate stats based on the _filtered_ subset of data.
+  - Total count, success rate (Accepted/Total), average rating.
+  - Grouped stats: Count by status, count by arrangement.
+- [ ] **Visualization**: Use `rich.panel` or `rich.columns` for a clean dashboard view.
 
 ## Phase 4: Advanced Features & Polish
 
