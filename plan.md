@@ -100,12 +100,12 @@ This document outlines the step-by-step implementation plan for the Job Search T
 
 ### 3.3. Feature 2: Edit Existing Jobs
 
-- [ ] Implement `edit` command in `commands/edit.py`.
-- [ ] Arguments: `job_id`.
-- [ ] Logic:
+- [x] Implement `edit` command in `commands/edit.py`.
+- [x] Arguments: `job_id`.
+- [x] Logic:
   1. Fetch job by ID.
   2. Display current values.
-  3. Prompt user for which field to update or accept flags for updates (e.g., `--status rejected`).
+  3. Prompt user for which field to update in a loop until users selects "done".
   4. Commit changes to DB.
 
 ### 3.4. Feature 3: Visualize Applications
