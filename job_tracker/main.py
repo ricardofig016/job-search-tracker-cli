@@ -1,6 +1,6 @@
 import typer
 from job_tracker.database import initialize_db
-from job_tracker.commands import add, edit, view, stats
+from job_tracker.commands import add, edit, view, delete, stats
 
 app = typer.Typer(
     help="Job Search Tracker CLI Application",
@@ -11,6 +11,7 @@ app = typer.Typer(
 app.command(name="add")(add.add)
 app.command(name="edit")(edit.edit)
 app.command(name="view")(view.view)
+app.command(name="delete")(delete.delete)
 app.command(name="stats")(stats.stats)
 
 

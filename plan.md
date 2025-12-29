@@ -83,6 +83,7 @@ This document outlines the step-by-step implementation plan for the Job Search T
 - [x] Implement `update_job(job_id, updates)`: Update specific fields of a job.
 - [x] Implement `get_jobs(filters, sort_by)`: Retrieve jobs with dynamic `WHERE` and `ORDER BY` clauses.
 - [x] Implement `get_job_by_id(job_id)`: Retrieve a single job.
+- [x] Implement `delete_job_by_id(job_id)`: Delete a single job.
 
 ## Phase 3: CLI Implementation - Core Functionalities
 
@@ -148,6 +149,15 @@ Implementing complex filtering via simple CLI flags can become unwieldy. We will
   - Total count, success rate (Accepted/Total), average rating.
   - Grouped stats: Count by status, count by arrangement.
 - [ ] **Visualization**: Use `rich.panel` or `rich.columns` for a clean dashboard view.
+
+### 3.7. Feature 5: Delete Job (`delete`)
+
+- [x] Implement `delete` command in `commands/delete.py`.
+- [x] Arguments: `job_id`.
+- [x] Logic:
+  1. Fetch job by ID to verify existence.
+  2. Prompt for confirmation.
+  3. Delete from DB.
 
 ## Phase 4: Advanced Features & Polish
 
