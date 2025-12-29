@@ -114,10 +114,10 @@ def get_jobs(where_clause: str = None, params: list = None, sort_clause: str = N
         query += f" WHERE {where_clause}"
 
     if sort_clause:
-        query += f" ORDER BY {sort_clause}"
+        query += f" ORDER BY {sort_clause}, id DESC"
     else:
-        # Default sort by date applied descending
-        query += " ORDER BY date_applied DESC"
+        # Default sort by date applied descending, then id descending
+        query += " ORDER BY date_applied DESC, id DESC"
 
     with get_db() as conn:
         return [dict(row) for row in conn.execute(query, params or []).fetchall()]

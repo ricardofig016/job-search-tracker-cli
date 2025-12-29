@@ -12,7 +12,7 @@ console = Console()
 def view(
     query: Optional[str] = typer.Argument(None, help="Optional query string for filtering (e.g., 'company~google')"),
     filter: Optional[List[str]] = typer.Option(None, "--filter", "-f", help="Filter strings (e.g., 'rating>=4')"),
-    sort: Optional[List[str]] = typer.Option(None, "--sort", "-s", help="Sort instructions (e.g., 'date:desc')"),
+    sort: Optional[List[str]] = typer.Option(None, "--sort", "-s", help="Sort instructions (e.g., 'date:desc'). Default is 'date:desc, id:desc'."),
     show: Optional[str] = typer.Option(None, "--show", help="Comma-separated list of columns to show"),
     hide: Optional[str] = typer.Option(None, "--hide", help="Comma-separated list of columns to hide"),
     all: bool = typer.Option(False, "--all", help="Show all columns"),
