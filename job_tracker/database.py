@@ -106,25 +106,21 @@ def update_job(job_id: int, updates: dict):
         conn.commit()
 
 
-def get_jobs(filters: dict = None, sort_by: str = None):
+def get_jobs(where_clause: str = None, params: list = None, sort_clause: str = None):
     """Retrieves jobs with dynamic filtering and sorting."""
     query = "SELECT * FROM jobs"
-    params = []
 
-    if filters:
-        conditions = []
-        for col, value in filters.items():
-            conditions.append(f"{col} = ?")
-            params.append(value)
-        query += " WHERE " + " AND ".join(conditions)
+    if where_clause:
+        query += f" WHERE {where_clause}"
 
-    if sort_by:
-        # Basic validation for sort_by to prevent SQL injection
-        # In a real app, we'd check against a list of valid columns
-        query += f" ORDER BY {sort_by}"
+    if sort_clause:
+        query += f" ORDER BY {sort_clause}"
+    else:
+        # Default sort by date applied descending
+        query += " ORDER BY date_applied DESC"
 
     with get_db() as conn:
-        return [dict(row) for row in conn.execute(query, params).fetchall()]
+        return [dict(row) for row in conn.execute(query, params or []).fetchall()]
 
 
 def get_job_by_id(job_id: int):
