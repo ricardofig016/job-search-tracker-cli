@@ -1,5 +1,5 @@
 import typer
-from datetime import date
+from datetime import date, timedelta
 from rich.console import Console
 from job_tracker.database import add_job
 
@@ -41,8 +41,18 @@ def add():
     # Status & Dates
     job_data["status"] = typer.prompt("Status (applied, rejected, accepted, interviewing, offered)", default="applied")
     job_data["date_posted"] = typer.prompt("Date Posted (YYYY-MM-DD)", default="", show_default=False)
-    job_data["date_applied"] = typer.prompt("Date Applied (YYYY-MM-DD)", default=date.today().isoformat())
-    job_data["followup_date"] = typer.prompt("Follow-up Date (YYYY-MM-DD)", default="", show_default=False)
+
+    date_applied_str = typer.prompt("Date Applied (YYYY-MM-DD)", default=date.today().isoformat())
+    job_data["date_applied"] = date_applied_str
+
+    # Calculate default follow-up date (10 days after applied date)
+    try:
+        applied_dt = date.fromisoformat(date_applied_str)
+        default_followup = (applied_dt + timedelta(days=10)).isoformat()
+    except ValueError:
+        default_followup = ""
+
+    job_data["followup_date"] = typer.prompt("Follow-up Date (YYYY-MM-DD)", default=default_followup)
     job_data["response_date"] = typer.prompt("Response Date (YYYY-MM-DD)", default="", show_default=False)
 
     # Interview
