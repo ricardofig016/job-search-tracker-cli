@@ -76,7 +76,21 @@ def view(
         row_data = []
         for key in visible_col_keys:
             val = job.get(COLUMN_MAPPING[key])
-            row_data.append(str(val) if val is not None else "")
+            display_val = str(val) if val is not None else ""
+
+            # Add clickable links for company and role if URLs exist
+            if key == "company":
+                link_url = job.get("company_url") or job.get("company_linkedin")
+                if link_url:
+                    display_val = f"[link={link_url}]{display_val}[/link]"
+            elif key == "role" and job.get("role_url"):
+                display_val = f"[link={job['role_url']}]{display_val}[/link]"
+            elif key == "company_linkedin" and job.get("company_linkedin"):
+                display_val = f"[link={job['company_linkedin']}]{display_val}[/link]"
+            elif key == "recruiter_linkedin" and job.get("recruiter_linkedin"):
+                display_val = f"[link={job['recruiter_linkedin']}]{display_val}[/link]"
+
+            row_data.append(display_val)
         table.add_row(*row_data)
 
     console.print(table)
