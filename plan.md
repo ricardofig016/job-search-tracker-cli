@@ -195,33 +195,33 @@ Implementing complex filtering via simple CLI flags can become unwieldy. We will
 - [x] **Add New Column**: Add `interview_link` (TEXT) to the `jobs` table to store meeting URLs.
 - [x] **Update Models**: Update `job_tracker/models.py` and `COLUMN_MAPPING` in `job_tracker/utils.py` to reflect these changes.
 - [x] **Update Any Other References**: Update any other parts of the codebase that reference `interview_date` or need to accommodate the new `interview_time` and `interview_link` fields.
-- [x] **Event Tracking**: Add `calendar_event_id` column to track created events for future updates/deletions.
+- [x] **Event Tracking**: Add `followup_event_id` and `interview_event_id` columns to track created events for future updates/deletions.
 
 ### 6.2. Google Calendar API Setup & Authentication
 
-- [ ] **API Configuration**: Enable Google Calendar API in the Google Cloud Console for `ricardocastrofigueiredo@gmail.com`.
-- [ ] **Credentials Management**: Set up OAuth 2.0 Client IDs and download `credentials.json`.
-- [ ] **Authentication Flow**: Implement a token-based authentication system.
-  - Handle initial login via browser.
-  - Store and refresh `token.json` for subsequent requests.
+- [x] **API Configuration**: Enable Google Calendar API in the Google Cloud Console for `ricardocastrofigueiredo@gmail.com`.
+- [x] **Credentials Management**: Set up OAuth 2.0 Client IDs and download `credentials.json`.
+- [x] **Authentication Flow**: Implement a token-based authentication system.
+  - [x] Handle initial login via browser.
+  - [x] Store and refresh `token.json` for subsequent requests.
 
 ### 6.3. Calendar Integration Logic
 
-- [ ] **Event Creation Utility**: Create a helper function to format and send event data to Google Calendar.
-  - **Title Format**: `JOB TRACKER - [Action] with [COMPANY] for [ROLE]`.
-  - **Description Content**: Include Job Posting URL, Recruiter Info (Name, Email, LinkedIn), and Interview Link.
-- [ ] **Timezone & Scheduling**:
-  - **Follow-ups**: Set to 8:00 AM WET (Western European Time) on the `followup_date`.
-  - **Interviews**: Set to the specific `interview_time` provided.
+- [x] **Event Creation Utility**: Create a helper function to format and send event data to Google Calendar.
+  - [x] **Title Format**: `JOB TRACKER - [Action] with [COMPANY] for [ROLE]`.
+  - [x] **Description Content**: Include Job Posting URL, Recruiter Info (Name, Email, LinkedIn), and Interview Link.
+- [x] **Timezone & Scheduling**:
+  - [x] **Follow-ups**: Set to 8:00 AM WET (Western European Time) on the `followup_date`.
+  - [x] **Interviews**: Set to the specific `interview_time` provided.
 
 ### 6.4. CLI Command Integration
 
-- [ ] **Update `add` Command**:
-  - Prompt for `interview_link`.
-  - Update `interview_time` prompt to accept date and time.
-  - Trigger calendar event creation after successful DB insertion.
-- [ ] **Update `edit` Command**:
-  - Add `interview_link` to editable fields.
-  - Detect changes in `followup_date`, `interview_time`, or `interview_link`.
-  - Trigger calendar event update or creation on save.
-- [ ] **Error Handling**: Implement robust error handling for API failures or offline status to ensure the CLI remains functional.
+- [x] **Update `add` Command**:
+  - [x] Prompt for `interview_link`.
+  - [x] Update `interview_time` prompt to accept date and time.
+  - [x] Trigger calendar event creation after successful DB insertion.
+- [x] **Update `edit` Command**:
+  - [x] Add `interview_link` to editable fields.
+  - [x] Detect changes in `followup_date`, `interview_time`, or `interview_link`.
+  - [x] Trigger calendar event update or creation on save.
+- [x] **Error Handling**: Implement robust error handling for API failures or offline status to ensure the CLI remains functional.

@@ -1,6 +1,7 @@
 import typer
 from rich.console import Console
 from job_tracker.database import get_job_by_id, delete_job_by_id
+from job_tracker.calendar_utils import delete_event
 
 console = Console()
 
@@ -24,6 +25,14 @@ def delete(job_id: int = typer.Argument(..., help="The ID of the job application
 
     # 3. Perform deletion
     try:
+        # Delete calendar events if they exist
+        if job.get("followup_event_id"):
+            console.print("[dim]Deleting follow-up from Google Calendar...[/dim]")
+            delete_event(job["followup_event_id"])
+        if job.get("interview_event_id"):
+            console.print("[dim]Deleting interview from Google Calendar...[/dim]")
+            delete_event(job["interview_event_id"])
+
         delete_job_by_id(job_id)
         console.print(f"[bold green]Success![/bold green] Job application [cyan]{job_id}[/cyan] has been deleted.")
     except Exception as e:

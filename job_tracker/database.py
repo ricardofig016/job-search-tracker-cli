@@ -48,7 +48,8 @@ def initialize_db():
         interview_time DATETIME,
         interview_type TEXT,
         interview_link TEXT,
-        calendar_event_id TEXT,
+        followup_event_id TEXT,
+        interview_event_id TEXT,
         offer TEXT,
         rating INTEGER CHECK(rating >= 1 AND rating <= 5),
         fit INTEGER CHECK(fit >= 1 AND fit <= 5),
@@ -86,10 +87,18 @@ def run_migrations():
             except sqlite3.OperationalError:
                 pass
 
-        # Add calendar_event_id if it doesn't exist
-        if 'calendar_event_id' not in columns:
+        # Add followup_event_id if it doesn't exist
+        if 'followup_event_id' not in columns:
             try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN calendar_event_id TEXT")
+                conn.execute("ALTER TABLE jobs ADD COLUMN followup_event_id TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add interview_event_id if it doesn't exist
+        if 'interview_event_id' not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN interview_event_id TEXT")
                 conn.commit()
             except sqlite3.OperationalError:
                 pass

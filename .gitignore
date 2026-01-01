@@ -14,3 +14,7 @@ env/
 
 # Outputs
 *.csv
+
+# Google API
+credentials.json
+token.json

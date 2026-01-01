@@ -1,9 +1,11 @@
 import typer
+import click
 from datetime import date, timedelta
 from rich.console import Console
-from job_tracker.database import add_job
+from job_tracker.database import add_job, update_job
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
 from job_tracker.utils import validate_date, validate_datetime
+from job_tracker.calendar_utils import sync_event
 
 console = Console()
 
@@ -25,10 +27,10 @@ def add():
     job_data["role_url"] = typer.prompt("Job Posting URL", default="", show_default=False)
 
     # Details
-    job_data["arrangement"] = typer.prompt("Arrangement", default=Arrangement.REMOTE.value, type=typer.Choice([e.value for e in Arrangement]))
-    job_data["type"] = typer.prompt("Job Type", default=JobType.FULLTIME.value, type=typer.Choice([e.value for e in JobType]))
-    job_data["level"] = typer.prompt("Experience Level", default=ExperienceLevel.MID_LEVEL.value, type=typer.Choice([e.value for e in ExperienceLevel]))
-    job_data["source"] = typer.prompt("Source", default=Source.LINKEDIN.value, type=typer.Choice([e.value for e in Source]))
+    job_data["arrangement"] = typer.prompt("Arrangement", default=Arrangement.REMOTE.value, type=click.Choice([e.value for e in Arrangement]))
+    job_data["type"] = typer.prompt("Job Type", default=JobType.FULLTIME.value, type=click.Choice([e.value for e in JobType]))
+    job_data["level"] = typer.prompt("Experience Level", default=ExperienceLevel.MID_LEVEL.value, type=click.Choice([e.value for e in ExperienceLevel]))
+    job_data["source"] = typer.prompt("Source", default=Source.LINKEDIN.value, type=click.Choice([e.value for e in Source]))
     job_data["location"] = typer.prompt("Location (e.g., City, Country)", default="", show_default=False)
 
     # Recruiter
@@ -41,7 +43,7 @@ def add():
     job_data["notes"] = typer.prompt("Notes", default="", show_default=False)
 
     # Status & Dates
-    job_data["status"] = typer.prompt("Status", default=Status.APPLIED.value, type=typer.Choice([e.value for e in Status]))
+    job_data["status"] = typer.prompt("Status", default=Status.APPLIED.value, type=click.Choice([e.value for e in Status]))
 
     while True:
         date_posted = typer.prompt("Date Posted (YYYY-MM-DD)", default="", show_default=False)
@@ -119,5 +121,23 @@ def add():
     try:
         job_id = add_job(final_data)
         console.print(f"\n[bold green]Success![/bold green] Job application added with ID: [cyan]{job_id}[/cyan]")
+
+        # Sync with Google Calendar
+        calendar_updates = {}
+        if final_data.get("followup_date"):
+            console.print("[dim]Syncing follow-up with Google Calendar...[/dim]")
+            f_id = sync_event(final_data, "followup")
+            if f_id:
+                calendar_updates["followup_event_id"] = f_id
+
+        if final_data.get("interview_time"):
+            console.print("[dim]Syncing interview with Google Calendar...[/dim]")
+            i_id = sync_event(final_data, "interview")
+            if i_id:
+                calendar_updates["interview_event_id"] = i_id
+
+        if calendar_updates:
+            update_job(job_id, calendar_updates)
+
     except Exception as e:
         console.print(f"\n[bold red]Error:[/bold red] Could not add job. {e}")
