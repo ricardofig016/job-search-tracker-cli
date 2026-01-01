@@ -1,6 +1,6 @@
 import typer
 from job_tracker.database import initialize_db
-from job_tracker.commands import add, edit, view, delete, stats
+from job_tracker.commands import add, edit, view, delete, stats, config
 
 app = typer.Typer(
     help="Job Search Tracker CLI Application",
@@ -13,6 +13,9 @@ app.command(name="edit")(edit.edit)
 app.command(name="view")(view.view)
 app.command(name="delete")(delete.delete)
 app.command(name="stats")(stats.stats)
+
+# Add command groups
+app.add_typer(config.app, name="config")
 
 
 @app.callback()

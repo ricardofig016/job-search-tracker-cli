@@ -165,8 +165,8 @@ Implementing complex filtering via simple CLI flags can become unwieldy. We will
 
 ### 4.1. Dynamic Column Management (CLI)
 
-- [ ] Add a `config` command group.
-- [ ] Implement `config add-column --name [name] --type [type] --default [value]`.
+- [x] Add a `config` command group.
+- [x] Implement `config add-column --name [name] --type [type] --default [value]`.
   - Connects to the schema migration function defined in Phase 2.2.
 
 ### 4.2. Refinement
