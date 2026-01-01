@@ -171,9 +171,9 @@ Implementing complex filtering via simple CLI flags can become unwieldy. We will
 
 ### 4.2. Refinement
 
-- [ ] Add error handling (e.g., invalid dates, ID not found).
-- [ ] Ensure Enums are validated (e.g., Status must be one of applied/rejected/accepted).
-- [ ] Add `--help` documentation for all commands.
+- [x] Add error handling (e.g., invalid dates, ID not found).
+- [x] Ensure Enums are validated (e.g., Status must be one of applied/rejected/accepted).
+- [x] Add `--help` documentation for all commands.
 
 ## Phase 5: Testing and Verification
 

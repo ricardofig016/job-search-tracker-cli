@@ -10,6 +10,7 @@
 ## Key Patterns & Conventions
 
 - **Field Mapping**: Always use `COLUMN_MAPPING` in [job_tracker/utils.py](job_tracker/utils.py) to translate between CLI-friendly names (e.g., `company`) and database column names (e.g., `company_name`).
+- **Enums & Validation**: Use the `Enum` classes in [job_tracker/models.py](job_tracker/models.py) for validating fields like `status`, `arrangement`, and `level`. Use `validate_date` from [job_tracker/utils.py](job_tracker/utils.py) for date strings.
 - **Subcommand Registration**: New commands must be added to [job_tracker/commands/](job_tracker/commands/) and registered in [job_tracker/main.py](job_tracker/main.py) using `app.command()` or `app.add_typer()` for command groups.
 - **Database Operations**: All SQL logic should reside in [job_tracker/database.py](job_tracker/database.py). Use the `get_db()` context manager for connections. Results are returned as `sqlite3.Row` objects for dictionary-like access.
 - **Interactive Prompts**: Use `typer.prompt` for user input in commands like `add` and `edit`.

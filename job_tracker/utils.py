@@ -1,6 +1,18 @@
 import re
 from typing import List, Tuple, Any, Dict
 
+from datetime import date
+
+def validate_date(date_str: str) -> bool:
+    """Validates if a string is in YYYY-MM-DD format."""
+    if not date_str:
+        return True
+    try:
+        date.fromisoformat(date_str)
+        return True
+    except ValueError:
+        return False
+
 # Mapping of short names used in CLI to actual database column names
 COLUMN_MAPPING = {
     "id": "id",

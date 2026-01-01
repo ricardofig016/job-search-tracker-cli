@@ -2,6 +2,8 @@ import typer
 from datetime import date, timedelta
 from rich.console import Console
 from job_tracker.database import add_job
+from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
+from job_tracker.utils import validate_date
 
 console = Console()
 
@@ -23,11 +25,27 @@ def add():
     job_data["role_url"] = typer.prompt("Job Posting URL", default="", show_default=False)
 
     # Details
+    job_data["arrangement"] = typer.prompt(
+        "Arrangement",
+        default=Arrangement.REMOTE.value,
+        type=typer.Choice([e.value for e in Arrangement])
+    )
+    job_data["type"] = typer.prompt(
+        "Job Type",
+        default=JobType.FULLTIME.value,
+        type=typer.Choice([e.value for e in JobType])
+    )
+    job_data["level"] = typer.prompt(
+        "Experience Level",
+        default=ExperienceLevel.MID_LEVEL.value,
+        type=typer.Choice([e.value for e in ExperienceLevel])
+    )
+    job_data["source"] = typer.prompt(
+        "Source",
+        default=Source.LINKEDIN.value,
+        type=typer.Choice([e.value for e in Source])
+    )
     job_data["location"] = typer.prompt("Location (e.g., City, Country)", default="", show_default=False)
-    job_data["arrangement"] = typer.prompt("Arrangement (onsite, hybrid, remote)", default="remote")
-    job_data["type"] = typer.prompt("Job Type (fulltime, contract, part-time, freelance)", default="fulltime")
-    job_data["level"] = typer.prompt("Experience Level (internship, junior, mid level, senior, lead, manager)", default="mid level")
-    job_data["source"] = typer.prompt("Source (linkedin, company website, indeed, glassdoor, referral, other)", default="linkedin")
 
     # Recruiter
     job_data["recruiter_name"] = typer.prompt("Recruiter Name", default="", show_default=False)
@@ -39,39 +57,82 @@ def add():
     job_data["notes"] = typer.prompt("Notes", default="", show_default=False)
 
     # Status & Dates
-    job_data["status"] = typer.prompt("Status (applied, rejected, accepted, interviewing, offered)", default="applied")
-    job_data["date_posted"] = typer.prompt("Date Posted (YYYY-MM-DD)", default="", show_default=False)
+    job_data["status"] = typer.prompt(
+        "Status",
+        default=Status.APPLIED.value,
+        type=typer.Choice([e.value for e in Status])
+    )
 
-    date_applied_str = typer.prompt("Date Applied (YYYY-MM-DD)", default=date.today().isoformat())
-    job_data["date_applied"] = date_applied_str
+    while True:
+        date_posted = typer.prompt("Date Posted (YYYY-MM-DD)", default="", show_default=False)
+        if validate_date(date_posted):
+            job_data["date_posted"] = date_posted
+            break
+        console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
+
+    while True:
+        date_applied_str = typer.prompt("Date Applied (YYYY-MM-DD)", default=date.today().isoformat())
+        if validate_date(date_applied_str):
+            job_data["date_applied"] = date_applied_str
+            break
+        console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
     # Calculate default follow-up date (10 days after applied date)
     try:
-        applied_dt = date.fromisoformat(date_applied_str)
+        applied_dt = date.fromisoformat(job_data["date_applied"])
         default_followup = (applied_dt + timedelta(days=10)).isoformat()
-    except ValueError:
+    except (ValueError, TypeError):
         default_followup = ""
 
-    job_data["followup_date"] = typer.prompt("Follow-up Date (YYYY-MM-DD)", default=default_followup)
-    job_data["response_date"] = typer.prompt("Response Date (YYYY-MM-DD)", default="", show_default=False)
+    while True:
+        followup_date = typer.prompt("Follow-up Date (YYYY-MM-DD)", default=default_followup)
+        if validate_date(followup_date):
+            job_data["followup_date"] = followup_date
+            break
+        console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
+
+    while True:
+        response_date = typer.prompt("Response Date (YYYY-MM-DD)", default="", show_default=False)
+        if validate_date(response_date):
+            job_data["response_date"] = response_date
+            break
+        console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
     # Interview
-    job_data["interview_date"] = typer.prompt("Interview Date (YYYY-MM-DD)", default="", show_default=False)
+    while True:
+        interview_date = typer.prompt("Interview Date (YYYY-MM-DD)", default="", show_default=False)
+        if validate_date(interview_date):
+            job_data["interview_date"] = interview_date
+            break
+        console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
+
     job_data["interview_type"] = typer.prompt("Interview Type", default="", show_default=False)
     job_data["offer"] = typer.prompt("Offer Details", default="", show_default=False)
 
     # Ratings
-    job_data["rating"] = typer.prompt("Job Rating (1-5)", default=0, type=int)
-    job_data["fit"] = typer.prompt("Job Fit (1-5)", default=0, type=int)
+    while True:
+        rating = typer.prompt("Job Rating (1-5)", default=0, type=int)
+        if 0 <= rating <= 5:
+            job_data["rating"] = rating
+            break
+        console.print("[bold red]Error:[/bold red] Rating must be between 1 and 5 (or 0 to skip).")
+
+    while True:
+        fit = typer.prompt("Job Fit (1-5)", default=0, type=int)
+        if 0 <= fit <= 5:
+            job_data["fit"] = fit
+            break
+        console.print("[bold red]Error:[/bold red] Fit must be between 1 and 5 (or 0 to skip).")
+
     job_data["feedback"] = typer.prompt("Feedback", default="", show_default=False)
     job_data["application_method"] = typer.prompt("Application Method", default="", show_default=False)
 
     # Clean up empty strings for optional fields (convert to None for DB)
     final_data = {k: (v if v != "" else None) for k, v in job_data.items()}
     # Handle 0 for rating/fit as None if not provided
-    if final_data["rating"] == 0:
+    if final_data.get("rating") == 0:
         final_data["rating"] = None
-    if final_data["fit"] == 0:
+    if final_data.get("fit") == 0:
         final_data["fit"] = None
 
     try:
