@@ -144,12 +144,13 @@ Implementing complex filtering via simple CLI flags can become unwieldy. We will
 
 ### 3.6. Feature 4: Statistics (`stats`)
 
-- [ ] **Consistency**: Use the exact same `Filter Parser` as the `view` command.
-- [ ] **Metrics**:
+- [x] **Consistency**: Use the exact same `Filter Parser` as the `view` command.
+- [x] **Metrics**:
   - Calculate stats based on the _filtered_ subset of data.
   - Total count, success rate (Accepted/Total), average rating.
   - Grouped stats: Count by status, count by arrangement.
-- [ ] **Visualization**: Use `rich.panel` or `rich.columns` for a clean dashboard view.
+  - **Insightful Metrics**: Conversion rates (Interview/Offer), Average Response Time.
+- [x] **Visualization**: Use `rich.panel` and `rich.columns` for a clean dashboard view.
 
 ### 3.7. Feature 5: Delete Job (`delete`)
 
