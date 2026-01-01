@@ -3,6 +3,7 @@ from typing import List, Tuple, Any, Dict
 
 from datetime import date
 
+
 def validate_date(date_str: str) -> bool:
     """Validates if a string is in YYYY-MM-DD format."""
     if not date_str:
@@ -12,6 +13,20 @@ def validate_date(date_str: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def validate_datetime(dt_str: str) -> bool:
+    """Validates if a string is in YYYY-MM-DD HH:MM format."""
+    if not dt_str:
+        return True
+    try:
+        from datetime import datetime
+
+        datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+        return True
+    except ValueError:
+        return False
+
 
 # Mapping of short names used in CLI to actual database column names
 COLUMN_MAPPING = {
@@ -36,14 +51,17 @@ COLUMN_MAPPING = {
     "date": "date_applied",
     "followup": "followup_date",
     "response": "response_date",
-    "interview": "interview_date",
+    "interview": "interview_time",
     "interview_type": "interview_type",
+    "interview_link": "interview_link",
+    "event_id": "calendar_event_id",
     "offer": "offer",
     "rating": "rating",
     "fit": "fit",
     "feedback": "feedback",
-    "method": "application_method"
+    "method": "application_method",
 }
+
 
 def parse_filter_string(filter_str: str) -> Tuple[str, List[Any]]:
     """
@@ -56,23 +74,23 @@ def parse_filter_string(filter_str: str) -> Tuple[str, List[Any]]:
 
     # Split by AND/OR but keep them to maintain logic
     # Using regex to split while preserving the delimiters
-    parts = re.split(r'(\s+AND\s+|\s+OR\s+)', filter_str, flags=re.IGNORECASE)
-    
+    parts = re.split(r"(\s+AND\s+|\s+OR\s+)", filter_str, flags=re.IGNORECASE)
+
     sql_parts = []
     params = []
-    
+
     for part in parts:
         clean_part = part.strip()
         if not clean_part:
             continue
-            
+
         upper_part = clean_part.upper()
         if upper_part in ("AND", "OR"):
             sql_parts.append(upper_part)
             continue
-        
+
         # Try to match range first: col:[min-max]
-        range_match = re.match(r'(\w+):\[(.*)-(.*)\]', clean_part)
+        range_match = re.match(r"(\w+):\[(.*)-(.*)\]", clean_part)
         if range_match:
             col_short, min_val, max_val = range_match.groups()
             col = COLUMN_MAPPING.get(col_short.lower(), col_short)
@@ -82,17 +100,17 @@ def parse_filter_string(filter_str: str) -> Tuple[str, List[Any]]:
 
         # Match other operators: ==, !=, >=, <=, >, <, ~, :
         # We use a regex that captures the column, operator, and value
-        match = re.match(r'(\w+)\s*(==|!=|>=|<=|>|<|~|:)\s*(.*)', clean_part)
+        match = re.match(r"(\w+)\s*(==|!=|>=|<=|>|<|~|:)\s*(.*)", clean_part)
         if not match:
             # If it doesn't match any operator, maybe it's just a keyword search on company/role?
             # But the requirement says "filter data for more than one thing... using OR/AND"
             # So we expect col op val format.
             continue
-            
+
         col_short, op, val = match.groups()
         col = COLUMN_MAPPING.get(col_short.lower(), col_short)
         val = val.strip().strip("'\"")
-        
+
         if op == "==":
             sql_parts.append(f"{col} = ?")
             params.append(val)
@@ -114,8 +132,9 @@ def parse_filter_string(filter_str: str) -> Tuple[str, List[Any]]:
         elif op in ("~", ":"):
             sql_parts.append(f"{col} LIKE ?")
             params.append(f"%{val}%")
-                
+
     return " ".join(sql_parts), params
+
 
 def parse_sort_string(sort_list: List[str]) -> str:
     """
@@ -124,7 +143,7 @@ def parse_sort_string(sort_list: List[str]) -> str:
     """
     if not sort_list:
         return ""
-    
+
     sort_parts = []
     for s in sort_list:
         if ":" in s:
@@ -135,31 +154,32 @@ def parse_sort_string(sort_list: List[str]) -> str:
         else:
             col = COLUMN_MAPPING.get(s.lower(), s)
             sort_parts.append(f"{col} ASC")
-            
+
     return ", ".join(sort_parts)
+
 
 def get_visible_columns(show: str = None, hide: str = None, all_cols: bool = False) -> List[str]:
     """
     Determines which columns should be displayed based on show/hide flags.
     """
     default_cols = ["id", "company", "role", "status", "date"]
-    
+
     if all_cols:
         return list(COLUMN_MAPPING.keys())
-    
+
     # Start with defaults
     cols = default_cols.copy()
-    
+
     if show:
         show_list = [c.strip().lower() for c in show.split(",")]
         for c in show_list:
             if c in COLUMN_MAPPING and c not in cols:
                 cols.append(c)
-    
+
     if hide:
         hide_list = [c.strip().lower() for c in hide.split(",")]
         for c in hide_list:
             if c in cols:
                 cols.remove(c)
-                
+
     return cols

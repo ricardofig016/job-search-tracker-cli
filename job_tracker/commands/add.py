@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from rich.console import Console
 from job_tracker.database import add_job
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
-from job_tracker.utils import validate_date
+from job_tracker.utils import validate_date, validate_datetime
 
 console = Console()
 
@@ -25,26 +25,10 @@ def add():
     job_data["role_url"] = typer.prompt("Job Posting URL", default="", show_default=False)
 
     # Details
-    job_data["arrangement"] = typer.prompt(
-        "Arrangement",
-        default=Arrangement.REMOTE.value,
-        type=typer.Choice([e.value for e in Arrangement])
-    )
-    job_data["type"] = typer.prompt(
-        "Job Type",
-        default=JobType.FULLTIME.value,
-        type=typer.Choice([e.value for e in JobType])
-    )
-    job_data["level"] = typer.prompt(
-        "Experience Level",
-        default=ExperienceLevel.MID_LEVEL.value,
-        type=typer.Choice([e.value for e in ExperienceLevel])
-    )
-    job_data["source"] = typer.prompt(
-        "Source",
-        default=Source.LINKEDIN.value,
-        type=typer.Choice([e.value for e in Source])
-    )
+    job_data["arrangement"] = typer.prompt("Arrangement", default=Arrangement.REMOTE.value, type=typer.Choice([e.value for e in Arrangement]))
+    job_data["type"] = typer.prompt("Job Type", default=JobType.FULLTIME.value, type=typer.Choice([e.value for e in JobType]))
+    job_data["level"] = typer.prompt("Experience Level", default=ExperienceLevel.MID_LEVEL.value, type=typer.Choice([e.value for e in ExperienceLevel]))
+    job_data["source"] = typer.prompt("Source", default=Source.LINKEDIN.value, type=typer.Choice([e.value for e in Source]))
     job_data["location"] = typer.prompt("Location (e.g., City, Country)", default="", show_default=False)
 
     # Recruiter
@@ -57,11 +41,7 @@ def add():
     job_data["notes"] = typer.prompt("Notes", default="", show_default=False)
 
     # Status & Dates
-    job_data["status"] = typer.prompt(
-        "Status",
-        default=Status.APPLIED.value,
-        type=typer.Choice([e.value for e in Status])
-    )
+    job_data["status"] = typer.prompt("Status", default=Status.APPLIED.value, type=typer.Choice([e.value for e in Status]))
 
     while True:
         date_posted = typer.prompt("Date Posted (YYYY-MM-DD)", default="", show_default=False)
@@ -100,13 +80,14 @@ def add():
 
     # Interview
     while True:
-        interview_date = typer.prompt("Interview Date (YYYY-MM-DD)", default="", show_default=False)
-        if validate_date(interview_date):
-            job_data["interview_date"] = interview_date
+        interview_time = typer.prompt("Interview Time (YYYY-MM-DD HH:MM)", default="", show_default=False)
+        if validate_datetime(interview_time):
+            job_data["interview_time"] = interview_time
             break
-        console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
+        console.print("[bold red]Error:[/bold red] Invalid format. Please use YYYY-MM-DD HH:MM.")
 
     job_data["interview_type"] = typer.prompt("Interview Type", default="", show_default=False)
+    job_data["interview_link"] = typer.prompt("Interview Link (Meeting URL)", default="", show_default=False)
     job_data["offer"] = typer.prompt("Offer Details", default="", show_default=False)
 
     # Ratings

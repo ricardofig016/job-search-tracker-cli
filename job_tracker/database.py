@@ -45,8 +45,10 @@ def initialize_db():
         date_applied DATE,
         followup_date DATE,
         response_date DATE,
-        interview_date DATE,
+        interview_time DATETIME,
         interview_type TEXT,
+        interview_link TEXT,
+        calendar_event_id TEXT,
         offer TEXT,
         rating INTEGER CHECK(rating >= 1 AND rating <= 5),
         fit INTEGER CHECK(fit >= 1 AND fit <= 5),
@@ -57,6 +59,40 @@ def initialize_db():
     with get_db() as conn:
         conn.execute(query)
         conn.commit()
+    
+    # Run migrations for existing databases
+    run_migrations()
+
+
+def run_migrations():
+    """Handles schema updates for existing databases."""
+    with get_db() as conn:
+        # Check if interview_date exists and rename it to interview_time
+        cursor = conn.execute("PRAGMA table_info(jobs)")
+        columns = [row['name'] for row in cursor.fetchall()]
+
+        if 'interview_date' in columns and 'interview_time' not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs RENAME COLUMN interview_date TO interview_time")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add interview_link if it doesn't exist
+        if 'interview_link' not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN interview_link TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add calendar_event_id if it doesn't exist
+        if 'calendar_event_id' not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN calendar_event_id TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
 
 
 def add_new_column(column_name: str, column_type: str, default_value: str = None):

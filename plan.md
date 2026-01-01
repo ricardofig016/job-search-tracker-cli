@@ -185,3 +185,43 @@ Implementing complex filtering via simple CLI flags can become unwieldy. We will
   5. View stats.
   6. Add a new column (e.g., `referral_bonus`).
   7. Export to CSV.
+
+## Phase 6: Google Calendar Integration
+
+### 6.1. Database Schema & Model Updates
+
+- [x] **Rename Column**: Rename `interview_date` to `interview_time` in the `jobs` table.
+- [x] **Update Data Type**: Change `interview_time` from `DATE` to `DATETIME` to support specific interview hours.
+- [x] **Add New Column**: Add `interview_link` (TEXT) to the `jobs` table to store meeting URLs.
+- [x] **Update Models**: Update `job_tracker/models.py` and `COLUMN_MAPPING` in `job_tracker/utils.py` to reflect these changes.
+- [x] **Update Any Other References**: Update any other parts of the codebase that reference `interview_date` or need to accommodate the new `interview_time` and `interview_link` fields.
+- [x] **Event Tracking**: Add `calendar_event_id` column to track created events for future updates/deletions.
+
+### 6.2. Google Calendar API Setup & Authentication
+
+- [ ] **API Configuration**: Enable Google Calendar API in the Google Cloud Console for `ricardocastrofigueiredo@gmail.com`.
+- [ ] **Credentials Management**: Set up OAuth 2.0 Client IDs and download `credentials.json`.
+- [ ] **Authentication Flow**: Implement a token-based authentication system.
+  - Handle initial login via browser.
+  - Store and refresh `token.json` for subsequent requests.
+
+### 6.3. Calendar Integration Logic
+
+- [ ] **Event Creation Utility**: Create a helper function to format and send event data to Google Calendar.
+  - **Title Format**: `JOB TRACKER - [Action] with [COMPANY] for [ROLE]`.
+  - **Description Content**: Include Job Posting URL, Recruiter Info (Name, Email, LinkedIn), and Interview Link.
+- [ ] **Timezone & Scheduling**:
+  - **Follow-ups**: Set to 8:00 AM WET (Western European Time) on the `followup_date`.
+  - **Interviews**: Set to the specific `interview_time` provided.
+
+### 6.4. CLI Command Integration
+
+- [ ] **Update `add` Command**:
+  - Prompt for `interview_link`.
+  - Update `interview_time` prompt to accept date and time.
+  - Trigger calendar event creation after successful DB insertion.
+- [ ] **Update `edit` Command**:
+  - Add `interview_link` to editable fields.
+  - Detect changes in `followup_date`, `interview_time`, or `interview_link`.
+  - Trigger calendar event update or creation on save.
+- [ ] **Error Handling**: Implement robust error handling for API failures or offline status to ensure the CLI remains functional.

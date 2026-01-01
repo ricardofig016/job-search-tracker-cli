@@ -89,6 +89,8 @@ def view(
                 display_val = f"[link={job['company_linkedin']}]{display_val}[/link]"
             elif key == "recruiter_linkedin" and job.get("recruiter_linkedin"):
                 display_val = f"[link={job['recruiter_linkedin']}]{display_val}[/link]"
+            elif key == "interview_link" and job.get("interview_link"):
+                display_val = f"[link={job['interview_link']}]{display_val}[/link]"
 
             row_data.append(display_val)
         table.add_row(*row_data)
