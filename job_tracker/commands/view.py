@@ -67,7 +67,7 @@ def view(
             raise typer.Exit(code=1)
 
     # 6. Display Table
-    table = Table(title="Job Applications")
+    table = Table(title="Job Applications", row_styles=["", "on grey7"], padding=(1, 1))
 
     for key in visible_col_keys:
         table.add_column(key.replace("_", " ").title(), style="cyan")

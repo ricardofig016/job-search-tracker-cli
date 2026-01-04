@@ -60,7 +60,7 @@ def initialize_db():
     with get_db() as conn:
         conn.execute(query)
         conn.commit()
-    
+
     # Run migrations for existing databases
     run_migrations()
 
@@ -70,9 +70,9 @@ def run_migrations():
     with get_db() as conn:
         # Check if interview_date exists and rename it to interview_time
         cursor = conn.execute("PRAGMA table_info(jobs)")
-        columns = [row['name'] for row in cursor.fetchall()]
+        columns = [row["name"] for row in cursor.fetchall()]
 
-        if 'interview_date' in columns and 'interview_time' not in columns:
+        if "interview_date" in columns and "interview_time" not in columns:
             try:
                 conn.execute("ALTER TABLE jobs RENAME COLUMN interview_date TO interview_time")
                 conn.commit()
@@ -80,7 +80,7 @@ def run_migrations():
                 pass
 
         # Add interview_link if it doesn't exist
-        if 'interview_link' not in columns:
+        if "interview_link" not in columns:
             try:
                 conn.execute("ALTER TABLE jobs ADD COLUMN interview_link TEXT")
                 conn.commit()
@@ -88,7 +88,7 @@ def run_migrations():
                 pass
 
         # Add followup_event_id if it doesn't exist
-        if 'followup_event_id' not in columns:
+        if "followup_event_id" not in columns:
             try:
                 conn.execute("ALTER TABLE jobs ADD COLUMN followup_event_id TEXT")
                 conn.commit()
@@ -96,9 +96,49 @@ def run_migrations():
                 pass
 
         # Add interview_event_id if it doesn't exist
-        if 'interview_event_id' not in columns:
+        if "interview_event_id" not in columns:
             try:
                 conn.execute("ALTER TABLE jobs ADD COLUMN interview_event_id TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add recruiter_linkedin if it doesn't exist
+        if "recruiter_linkedin" not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN recruiter_linkedin TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add expected_salary if it doesn't exist
+        if "expected_salary" not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN expected_salary TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add notes if it doesn't exist
+        if "notes" not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN notes TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add rating if it doesn't exist
+        if "rating" not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN rating INTEGER CHECK(rating >= 1 AND rating <= 5)")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add fit if it doesn't exist
+        if "fit" not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN fit INTEGER CHECK(fit >= 1 AND fit <= 5)")
                 conn.commit()
             except sqlite3.OperationalError:
                 pass
@@ -173,6 +213,14 @@ def get_job_by_id(job_id: int):
     query = "SELECT * FROM jobs WHERE id = ?"
     with get_db() as conn:
         row = conn.execute(query, (job_id,)).fetchone()
+        return dict(row) if row else None
+
+
+def get_job_by_url(url: str):
+    """Retrieves a single job by its role URL."""
+    query = "SELECT * FROM jobs WHERE role_url = ?"
+    with get_db() as conn:
+        row = conn.execute(query, (url,)).fetchone()
         return dict(row) if row else None
 
 
