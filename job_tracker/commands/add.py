@@ -5,7 +5,6 @@ from rich.console import Console
 from job_tracker.database import add_job, update_job
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
 from job_tracker.utils import validate_date, validate_datetime
-from job_tracker.calendar_utils import sync_event
 
 console = Console()
 
@@ -123,6 +122,7 @@ def add():
         console.print(f"\n[bold green]Success![/bold green] Job application added with ID: [cyan]{job_id}[/cyan]")
 
         # Sync with Google Calendar
+        from job_tracker.calendar_utils import sync_event
         calendar_updates = {}
         if final_data.get("followup_date"):
             console.print("[dim]Syncing follow-up with Google Calendar...[/dim]")

@@ -18,3 +18,6 @@ env/
 # Google API
 credentials.json
 token.json
+
+# Other files
+linkedin_urls_on_standby.txt

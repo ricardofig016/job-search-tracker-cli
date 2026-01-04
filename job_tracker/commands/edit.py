@@ -5,7 +5,6 @@ from rich.table import Table
 from job_tracker.database import get_job_by_id, update_job
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
 from job_tracker.utils import validate_date, validate_datetime
-from job_tracker.calendar_utils import sync_event
 
 console = Console()
 
@@ -110,6 +109,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
 
             if any(field in updates for field in calendar_trigger_fields):
                 # Fetch the full updated job data to sync
+                from job_tracker.calendar_utils import sync_event
                 updated_job = get_job_by_id(job_id)
                 calendar_updates = {}
 
