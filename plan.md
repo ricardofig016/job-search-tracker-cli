@@ -1,227 +1,174 @@
-# Implementation Plan: Job Search Tracker CLI
+# Implementation Plan: LinkedIn Job Post Scraper & LLM Integration
 
-This document outlines the step-by-step implementation plan for the Job Search Tracker CLI tool. The tool will be built using Python and SQLite.
+This plan outlines the steps to implement a feature that allows adding job posts via a LinkedIn URL. The system will scrape the page for structured data and use an LLM (ChatGPT) to extract unstructured information, infer missing fields, and generate personalized insights (notes, rating, fit).
 
-## Phase 1: Project Setup and Architecture
+## 1. Prerequisites & Dependencies
 
-### 1.1. Environment Setup
+We need to add libraries for HTTP requests, HTML parsing, and LLM interaction.
 
-- [x] Create a `requirements.txt` file.
-  - **Dependencies**:
-    - `typer`: For building the CLI interface (modern, easy to use).
-    - `rich`: For beautiful console output (tables, colors).
-    - `sqlite3`: Built-in Python library for database interactions.
-- [x] Create the project structure:
+- **`requests`**: For fetching the LinkedIn job page (unauthenticated).
+- **`beautifulsoup4`**: For parsing the HTML content.
+- **`openai`**: For interacting with the ChatGPT API.
+- **`python-dotenv`**: To manage the OpenAI API key (if not already present).
 
-  ```python
-  job-search-tracker/
-  ├── job_tracker/
-  │   ├── __init__.py
-  │   ├── main.py          # CLI Entry point
-  │   ├── database.py      # DB connection and schema management
-  │   ├── models.py        # Data classes/types
-  │   ├── commands/        # Command implementations
-  │   │   ├── __init__.py
-  │   │   ├── add.py
-  │   │   ├── edit.py
-  │   │   ├── view.py
-  │   │   └── stats.py
-  │   └── utils.py         # Helper functions (CSV export, formatting)
-  ├── tests/
-  ├── requirements.txt
-  └── README.md
-  ```
+### Action Items
 
-### 1.2. Database Design
+- Update `requirements.txt` to include:
+  - `requests`
+  - `beautifulsoup4`
+  - `openai`
+  - `python-dotenv` (if needed)
 
-- [x] Define the SQLite schema in `job_tracker/database.py`.
-- [x] Implement a `initialize_db()` function to create the `jobs` table if it doesn't exist.
-- **Table Schema (`jobs`)**:
-  - `id`: INTEGER PRIMARY KEY AUTOINCREMENT
-  - `company_name`: TEXT
-  - `company_url`: TEXT
-  - `company_linkedin`: TEXT
-  - `role_name`: TEXT
-  - `role_url`: TEXT
-  - `location`: TEXT
-  - `arrangement`: TEXT (Enum: onsite, hybrid, remote)
-  - `type`: TEXT (Enum: fulltime, contract, etc)
-  - `level`: TEXT (Enum: internship, junior, mid level, senior)
-  - `source`: TEXT (Enum: linkedin, company website)
-  - `recruiter_name`: TEXT
-  - `recruiter_email`: TEXT
-  - `recruiter_linkedin`: TEXT
-  - `expected_salary`: TEXT
-  - `notes`: TEXT
-  - `status`: TEXT (Enum: applied, rejected, accepted)
-  - `date_posted`: DATE
-  - `date_applied`: DATE
-  - `followup_date`: DATE
-  - `response_date`: DATE
-  - `interview_date`: DATE
-  - `interview_type`: TEXT
-  - `offer`: TEXT
-  - `rating`: INTEGER (1-5)
-  - `fit`: INTEGER (1-5)
-  - `feedback`: TEXT
-  - `application_method`: TEXT
+## 2. Configuration & User Profile
 
-## Phase 2: Core Database Operations
+To calculate `fit` and `rating`, the LLM needs context about the user. We will introduce a user profile file.
 
-### 2.1. Database Connection
+### Action Items
 
-- [x] Implement context manager for SQLite connection in `database.py`.
+- **Create `user_profile.md`**: A file in the project root where the user can paste their resume, skills, and experience.
+- **Environment Variable**: Ensure `OPENAI_API_KEY` is set in a `.env` file or the environment.
 
-### 2.2. Schema Migration Support
+## 3. Architecture Changes
 
-- [x] Implement a function `add_new_column(column_name, column_type, default_value)` in `database.py`.
-  - This allows adding columns dynamically as requested.
-  - Logic: Execute `ALTER TABLE jobs ADD COLUMN {column_name} {column_type} DEFAULT {default_value}`.
+We will introduce two new modules to keep the logic clean and separated from the CLI commands.
 
-### 2.3. CRUD Operations
+- **`job_tracker/scraper.py`**: Handles HTTP requests and HTML parsing using BeautifulSoup.
+- **`job_tracker/llm.py`**: Handles constructing the prompt, calling the OpenAI API, and parsing the structured JSON response.
 
-- [x] Implement `add_job(job_data)`: Insert a new record.
-- [x] Implement `update_job(job_id, updates)`: Update specific fields of a job.
-- [x] Implement `get_jobs(filters, sort_by)`: Retrieve jobs with dynamic `WHERE` and `ORDER BY` clauses.
-- [x] Implement `get_job_by_id(job_id)`: Retrieve a single job.
-- [x] Implement `delete_job_by_id(job_id)`: Delete a single job.
+## 4. Step-by-Step Implementation
 
-## Phase 3: CLI Implementation - Core Functionalities
+### Step 1: Implement `job_tracker/scraper.py`
 
-### 3.1. Main Entry Point
+This module will be responsible for fetching the URL and extracting fields that can be reliably found in the HTML structure.
 
-- [x] Setup `job_tracker/main.py` using `typer.Typer`.
-- [x] Define the main callback to handle global flags if any.
+**Functions:**
 
-### 3.2. Feature 1: Add New Jobs
+1.  `fetch_job_page(url: str) -> str`:
 
-- [x] Implement `add` command in `commands/add.py`.
-- [x] Use `typer.prompt` to interactively ask for essential fields (Company, Role, Status).
-- [x] Allow optional fields to be passed via flags or skipped.
-- [x] Auto-fill `date_applied` with today's date if not provided.
+    - Perform a GET request to the provided URL.
+    - Use a standard User-Agent header to avoid immediate blocking (e.g., mimicking a browser).
+    - Return the HTML content.
 
-### 3.3. Feature 2: Edit Existing Jobs
+2.  `extract_html_data(html: str) -> dict`:
+    - Parse HTML with BeautifulSoup.
+    - Initialize a dictionary for extracted data.
+    - **Extraction Logic (per user specs):**
+      - **`company_name`**:
+        - Try: `a.topcard__org-name-link` text.
+        - Fallback: Parse `<title>` tag or URL path.
+      - **`company_linkedin`**:
+        - Try: `a.topcard__org-name-link['href']`.
+      - **`role_name`**:
+        - Try: `h1.top-card-layout__title` text OR `h3.sub-nav-cta__header` text.
+      - **`location`**:
+        - Try: `span.sub-nav-cta__meta-text` text OR 2nd `span.topcard__flavor--bullet` text.
+      - **`type`**:
+        - Find `h3` containing "Employment type", get following `span.description__job-criteria-text`.
+        - If missing, mark as None (to be handled by LLM).
+      - **`level`**:
+        - Find `h3` containing "Seniority level", get following `span.description__job-criteria-text`.
+        - If missing or "Not Applicable", mark as None (to be handled by LLM).
+      - **`recruiter_name`**:
+        - Try: `div.message-the-recruiter a.base-card__full-link span.sr-only` text.
+        - If missing, mark as None (to be handled by LLM).
+      - **`recruiter_linkedin`**:
+        - Try: `div.message-the-recruiter a.base-card__full-link['href']`.
+        - If missing, mark as None (to be handled by LLM).
+      - **`date_posted_raw`**:
+        - Extract text from `span.posted-time-ago__text` (e.g., "2 days ago").
+      - **`job_description`**:
+        - Extract the full text of the job description container (usually `div.description__text` or `div.show-more-less-html__markup`). This is crucial for the LLM.
 
-- [x] Implement `edit` command in `commands/edit.py`.
-- [x] Arguments: `job_id`.
-- [x] Logic:
-  1. Fetch job by ID.
-  2. Display current values.
-  3. Prompt user for which field to update in a loop until users selects "done".
-  4. Commit changes to DB.
+### Step 2: Implement `job_tracker/llm.py`
 
-### 3.4. Advanced Query and Filtering Engine
+This module will handle the single LLM call required to process the job post.
 
-Implementing complex filtering via simple CLI flags can become unwieldy. We will implement a **Hybrid Query Approach**:
+**Functions:**
 
-- **A "Query String" parser** for complex logic (e.g., `--filter "rating>=4 AND company~google"`).
-- **Interactive Mode** (optional) if no arguments are provided to `view`.
+1.  `enrich_job_data(html_data: dict, user_profile_text: str) -> dict`:
+    - **Prepare Context**:
+      - Current Date (YYYY-MM-DD).
+      - `date_posted_raw` from HTML.
+      - `job_description` text.
+      - `user_profile_text`.
+      - List of fields that _failed_ HTML extraction (e.g., if `type` was null).
+    - **Construct Prompt**:
+      - **System**: "You are a career assistant. Extract job details and analyze fit based on the user's profile."
+      - **User**: Provide the context and ask for a JSON response.
+    - **Define Schema (Structured Output)**:
+      - `arrangement` (string: Remote, Hybrid, Onsite)
+      - `recruiter_email` (string or null)
+      - `expected_salary` (string or null)
+      - `date_posted` (string, YYYY-MM-DD format, calculated from `date_posted_raw` + current date)
+      - `notes` (string, concise summary)
+      - `rating` (integer, 1-5)
+      - `fit` (integer, 1-5)
+      - **Conditional Fields**: Include `type`, `level`, `recruiter_name`, `recruiter_linkedin` in the schema. The prompt should instruct the LLM to fill these _only if_ they are not provided or if specifically asked (or we can just always ask and overwrite if HTML failed, or prefer HTML if present). _Decision: Always ask for them in the schema to keep the schema static, but in the prompt, tell the LLM to extract them from the description._
+    - **Call OpenAI**: Use `client.chat.completions.create` with `response_format={"type": "json_object"}` or structured outputs.
+    - **Return**: Parsed JSON dictionary.
 
-#### Logic Implementation in `utils.py` & `database.py`
+### Step 3: Update `job_tracker/commands/add.py`
 
-- [x] **Filter Parser**: Create a utility to parse filter strings into SQL `WHERE` clauses.
-  - **Operators**: `==`, `!=`, `>=`, `<=`, `>`, `<`.
-  - **Substring**: Use `~` or `:` for `LIKE %value%`.
-  - **Logic**: Support `AND` / `OR` keywords.
-  - **Ranges**: Support `col:[min-max]` syntax.
-- [x] **Multilevel Sort Parser**: Handle a list of sort instructions (e.g., `['date_applied:desc', 'rating:asc']`).
-- [x] **Column Selector**: Implement a mapping of "short names" to DB columns to allow `--show company,role,status`.
+Modify the `add` command to accept the URL and orchestrate the flow.
 
-### 3.5. Feature 3: Visualize Applications (`view`)
+**Changes:**
 
-- [x] **Command Signature**: `view [QUERY] --filter TEXT --sort TEXT --show TEXT --hide TEXT --export --output FILENAME`.
-- [x] **Filtering Logic**:
-  - Combine positional `QUERY` and multiple `--filter` flags.
-  - Default logic is `AND`, but allow `OR` within the query string.
-- [x] **Sorting**: Support multiple `--sort` flags for multilevel sorting (e.g., `--sort date:desc --sort rating:desc`).
-- [x] **Column Management**:
-  - **Sensible Defaults**: ID, Company, Role, Status, Date Applied.
-  - Use `--show` to add columns and `--hide` to remove them.
-  - Use `--all` to show every column (useful for CSV export).
-- [x] **Output**:
-  - **Rich Table**: Use `rich.table` with dynamic columns based on selection.
-  - **CSV Export**: Use `--export` (or `-e`) to enable export, and `--output` (or `-o`) to specify the filename (defaults to `output.csv`).
+1.  **Arguments**:
 
-### 3.6. Feature 4: Statistics (`stats`)
+    - Add `url: str = typer.Option(None, "--url", help="LinkedIn job post URL")` to the `add` function signature.
 
-- [x] **Consistency**: Use the exact same `Filter Parser` as the `view` command.
-- [x] **Metrics**:
-  - Calculate stats based on the _filtered_ subset of data.
-  - Total count, success rate (Accepted/Total), average rating.
-  - Grouped stats: Count by status, count by arrangement.
-  - **Insightful Metrics**: Conversion rates (Interview/Offer), Average Response Time.
-- [x] **Visualization**: Use `rich.panel` and `rich.columns` for a clean dashboard view.
+2.  **Logic Flow (if URL is provided)**:
+    - **Fetch & Parse**: Call `scraper.fetch_job_page(url)` and `scraper.extract_html_data(html)`.
+    - **Load Profile**: Read `user_profile.md`. If it doesn't exist, warn the user that "fit" and "rating" might be inaccurate or skip those specific LLM instructions.
+    - **LLM Enrichment**: Call `llm.enrich_job_data`.
+    - **Merge Data**:
+      - Start with `html_data`.
+      - Update with `llm_data` (LLM fills gaps like `arrangement`, `notes`, etc., and resolves `date_posted`).
+      - Set `role_url` = `url`.
+      - Set `source` = "linkedin".
+    - **Interactive Confirmation/Completion**:
+      - The `add` command currently prompts for fields. We need to change this to _pre-fill_ the defaults with our extracted data.
+      - For fields NOT extracted (e.g., `status`, `date_applied`, `interview_...`), prompt the user as normal.
+      - For extracted fields (`company`, `role`, `location`, etc.), we can either:
+        - Skip prompting (trust the scraper).
+        - Prompt with the extracted value as the `default`. _Recommendation: Prompt with default so the user can verify._
+    - **Save**: Proceed with the existing logic to save to the database.
 
-### 3.7. Feature 5: Delete Job (`delete`)
+### Step 4: Update `job_tracker/models.py` (if necessary)
 
-- [x] Implement `delete` command in `commands/delete.py`.
-- [x] Arguments: `job_id`.
-- [x] Logic:
-  1. Fetch job by ID to verify existence.
-  2. Prompt for confirmation.
-  3. Delete from DB.
+- Ensure `JobPost` model (or the dict passed to DB) can handle the new fields if they aren't already there.
+- Check if `recruiter_linkedin`, `expected_salary`, `notes`, `rating`, `fit` exist in the DB schema.
+  - _Note_: The user instructions imply these fields are desired. We need to check `initialize_db` in `database.py`. If these columns don't exist, we need to add them or use `add_new_column` logic if the app supports dynamic schema updates, or manually update the schema.
+  - _Assumption_: Based on "add a new feature", we likely need to ensure the DB has these columns.
+  - **Action**: Check `job_tracker/database.py` schema. If columns are missing, create a migration function or update `initialize_db` and instruct the user to run a migration (or handle it automatically).
 
-## Phase 4: Advanced Features & Polish
+## 5. Detailed Field Mapping & Logic
 
-### 4.1. Dynamic Column Management (CLI)
+| Field                | Source   | Logic                                              |
+| :------------------- | :------- | :------------------------------------------------- |
+| `company_name`       | HTML     | `a.topcard__org-name-link`                         |
+| `company_linkedin`   | HTML     | `a.topcard__org-name-link['href']`                 |
+| `role_name`          | HTML     | `h1.top-card-layout__title`                        |
+| `location`           | HTML     | `span.sub-nav-cta__meta-text`                      |
+| `arrangement`        | LLM      | Extracted from description (Remote/Hybrid/Onsite)  |
+| `type`               | HTML/LLM | `Employment type` section or LLM fallback          |
+| `level`              | HTML/LLM | `Seniority level` section or LLM fallback          |
+| `recruiter_name`     | HTML/LLM | `div.message-the-recruiter` or LLM fallback        |
+| `recruiter_email`    | LLM      | Extracted from description                         |
+| `recruiter_linkedin` | HTML/LLM | `div.message-the-recruiter` or LLM fallback        |
+| `expected_salary`    | LLM      | Extracted from description                         |
+| `date_posted`        | HTML+LLM | HTML relative string -> LLM converts to YYYY-MM-DD |
+| `role_url`           | Input    | Direct from CLI arg                                |
+| `source`             | Constant | "linkedin"                                         |
+| `notes`              | LLM      | Generated summary                                  |
+| `rating`             | LLM      | Calculated (1-5) based on profile                  |
+| `fit`                | LLM      | Calculated (1-5) based on profile                  |
 
-- [x] Add a `config` command group.
-- [x] Implement `config add-column --name [name] --type [type] --default [value]`.
-  - Connects to the schema migration function defined in Phase 2.2.
+## 6. Verification & Testing
 
-### 4.2. Refinement
-
-- [x] Add error handling (e.g., invalid dates, ID not found).
-- [x] Ensure Enums are validated (e.g., Status must be one of applied/rejected/accepted).
-- [x] Add `--help` documentation for all commands.
-
-## Phase 5: Testing and Verification
-
-- [ ] Manual testing of the workflow:
-  1. Initialize DB.
-  2. Add a job.
-  3. View the job list.
-  4. Edit the job status.
-  5. View stats.
-  6. Add a new column (e.g., `referral_bonus`).
-  7. Export to CSV.
-
-## Phase 6: Google Calendar Integration
-
-### 6.1. Database Schema & Model Updates
-
-- [x] **Rename Column**: Rename `interview_date` to `interview_time` in the `jobs` table.
-- [x] **Update Data Type**: Change `interview_time` from `DATE` to `DATETIME` to support specific interview hours.
-- [x] **Add New Column**: Add `interview_link` (TEXT) to the `jobs` table to store meeting URLs.
-- [x] **Update Models**: Update `job_tracker/models.py` and `COLUMN_MAPPING` in `job_tracker/utils.py` to reflect these changes.
-- [x] **Update Any Other References**: Update any other parts of the codebase that reference `interview_date` or need to accommodate the new `interview_time` and `interview_link` fields.
-- [x] **Event Tracking**: Add `followup_event_id` and `interview_event_id` columns to track created events for future updates/deletions.
-
-### 6.2. Google Calendar API Setup & Authentication
-
-- [x] **API Configuration**: Enable Google Calendar API in the Google Cloud Console for `ricardocastrofigueiredo@gmail.com`.
-- [x] **Credentials Management**: Set up OAuth 2.0 Client IDs and download `credentials.json`.
-- [x] **Authentication Flow**: Implement a token-based authentication system.
-  - [x] Handle initial login via browser.
-  - [x] Store and refresh `token.json` for subsequent requests.
-
-### 6.3. Calendar Integration Logic
-
-- [x] **Event Creation Utility**: Create a helper function to format and send event data to Google Calendar.
-  - [x] **Title Format**: `JOB TRACKER - [Action] with [COMPANY] for [ROLE]`.
-  - [x] **Description Content**: Include Job Posting URL, Recruiter Info (Name, Email, LinkedIn), and Interview Link.
-- [x] **Timezone & Scheduling**:
-  - [x] **Follow-ups**: Set to 8:00 AM WET (Western European Time) on the `followup_date`.
-  - [x] **Interviews**: Set to the specific `interview_time` provided.
-
-### 6.4. CLI Command Integration
-
-- [x] **Update `add` Command**:
-  - [x] Prompt for `interview_link`.
-  - [x] Update `interview_time` prompt to accept date and time.
-  - [x] Trigger calendar event creation after successful DB insertion.
-- [x] **Update `edit` Command**:
-  - [x] Add `interview_link` to editable fields.
-  - [x] Detect changes in `followup_date`, `interview_time`, or `interview_link`.
-  - [x] Trigger calendar event update or creation on save.
-- [x] **Error Handling**: Implement robust error handling for API failures or offline status to ensure the CLI remains functional.
+1.  **Unit Test Scraper**: Create a test with a saved LinkedIn HTML file to verify selector logic without hitting the network constantly.
+2.  **Integration Test**: Run `python -m job_tracker.main add --url <URL>` and verify:
+    - Data is fetched.
+    - LLM is called.
+    - Prompts appear with pre-filled values.
+    - Database is updated correctly.
