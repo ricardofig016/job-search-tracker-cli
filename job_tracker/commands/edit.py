@@ -117,11 +117,11 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
 
             # Check if we need to sync with Google Calendar
             # Relevant fields: interview_time, interview_link, company_name, role_name, etc.
-            calendar_trigger_fields = ["interview_time", "interview_link", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "notes"]
+            calendar_trigger_fields = ["interview_time", "interview_link", "interview_type", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "notes"]
 
             if any(field in updates for field in calendar_trigger_fields):
                 # Fetch the full updated job data to sync
-                from job_tracker.calendar_utils import sync_event
+                from job_tracker.calendar_utils import sync_event, delete_event
 
                 updated_job = get_job_by_id(job_id)
                 calendar_updates = {}
@@ -131,6 +131,11 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
                     i_id = sync_event(updated_job, "interview")
                     if i_id:
                         calendar_updates["interview_event_id"] = i_id
+                elif job.get("interview_event_id"):
+                    # If interview_time was cleared but an event existed, delete it
+                    console.print("[dim]Removing interview from Google Calendar...[/dim]")
+                    delete_event(job["interview_event_id"])
+                    calendar_updates["interview_event_id"] = None
 
                 if calendar_updates:
                     update_job(job_id, calendar_updates)
