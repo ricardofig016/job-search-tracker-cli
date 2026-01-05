@@ -34,7 +34,7 @@ def initialize_db():
         arrangement TEXT CHECK(arrangement IN ('onsite', 'hybrid', 'remote')),
         type TEXT CHECK(type IN ('fulltime', 'contract', 'part-time', 'freelance')),
         level TEXT CHECK(level IN ('internship', 'junior', 'mid level', 'senior', 'lead', 'manager')),
-        source TEXT CHECK(source IN ('linkedin', 'company website', 'indeed', 'glassdoor', 'referral', 'other')),
+        source TEXT CHECK(source IN ('linkedin', 'company website', 'indeed', 'glassdoor', 'referral', 'recruiter outreach', 'other')),
         recruiter_name TEXT,
         recruiter_email TEXT,
         recruiter_linkedin TEXT,

@@ -29,6 +29,7 @@ class Source(str, Enum):
     INDEED = "indeed"
     GLASSDOOR = "glassdoor"
     REFERRAL = "referral"
+    RECRUITER_OUTREACH = "recruiter outreach"
     OTHER = "other"
 
 
