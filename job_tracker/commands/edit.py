@@ -1,5 +1,6 @@
 import typer
 import click
+from datetime import date
 from rich.console import Console
 from rich.table import Table
 from job_tracker.database import get_job_by_id, update_job
@@ -68,7 +69,11 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
             updates[field_to_edit] = new_value
         elif field_to_edit in date_fields:
             while True:
-                new_value = typer.prompt(f"Enter new value for {field_to_edit} (YYYY-MM-DD)", default=str(job[field_to_edit]) if job[field_to_edit] is not None else "")
+                default_val = str(job[field_to_edit]) if job[field_to_edit] is not None else ""
+                if field_to_edit == "response_date" and not default_val:
+                    default_val = date.today().isoformat()
+
+                new_value = typer.prompt(f"Enter new value for {field_to_edit} (YYYY-MM-DD)", default=default_val)
                 if validate_date(new_value):
                     updates[field_to_edit] = new_value if new_value != "" else None
                     break
@@ -110,6 +115,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
             if any(field in updates for field in calendar_trigger_fields):
                 # Fetch the full updated job data to sync
                 from job_tracker.calendar_utils import sync_event
+
                 updated_job = get_job_by_id(job_id)
                 calendar_updates = {}
 
