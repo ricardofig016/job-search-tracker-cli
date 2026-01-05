@@ -28,7 +28,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
     # Map fields to their respective Enum classes for validation
     enum_fields = {"arrangement": Arrangement, "type": JobType, "level": ExperienceLevel, "source": Source, "status": Status}
 
-    date_fields = ["date_posted", "date_applied", "followup_date", "response_date"]
+    date_fields = ["date_posted", "date_applied", "response_date"]
     datetime_fields = ["interview_time"]
 
     while True:
@@ -109,8 +109,8 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
             console.print(f"[bold green]Success![/bold green] Job {job_id} updated.")
 
             # Check if we need to sync with Google Calendar
-            # Relevant fields: followup_date, interview_time, interview_link, company_name, role_name, etc.
-            calendar_trigger_fields = ["followup_date", "interview_time", "interview_link", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "notes"]
+            # Relevant fields: interview_time, interview_link, company_name, role_name, etc.
+            calendar_trigger_fields = ["interview_time", "interview_link", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "notes"]
 
             if any(field in updates for field in calendar_trigger_fields):
                 # Fetch the full updated job data to sync
@@ -118,12 +118,6 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
 
                 updated_job = get_job_by_id(job_id)
                 calendar_updates = {}
-
-                if updated_job.get("followup_date"):
-                    console.print("[dim]Updating follow-up on Google Calendar...[/dim]")
-                    f_id = sync_event(updated_job, "followup")
-                    if f_id:
-                        calendar_updates["followup_event_id"] = f_id
 
                 if updated_job.get("interview_time"):
                     console.print("[dim]Updating interview on Google Calendar...[/dim]")

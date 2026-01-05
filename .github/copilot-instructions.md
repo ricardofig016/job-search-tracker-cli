@@ -4,11 +4,12 @@
 
 - **CLI Framework**: Built with [Typer](https://typer.tiangolo.com/). Subcommands are modularized in [job_tracker/commands/](job_tracker/commands/) and registered in [job_tracker/main.py](job_tracker/main.py).
 - **Database**: SQLite ([jobs.db](jobs.db) in root). Managed via [job_tracker/database.py](job_tracker/database.py) using raw SQL and `sqlite3`. No ORM is used.
-- **UI/Formatting**: [Rich](https://rich.readthedocs.io/) is used for all console output, including tables, panels, and columns.
+- **UI/Formatting**: [Rich](https://rich.readthedocs.io/) is used for all console output. Use `Table`, `Panel`, and `Console` for structured output.
+- **Prompts**: Use `typer.prompt` for interactive input. For bulk operations, scripts like `bulk_add.py` pipe newlines to accept defaults.
 - **Data Enrichment**:
-  - **Scraper**: [job_tracker/scraper.py](job_tracker/scraper.py) fetches and parses LinkedIn job pages using `requests` and `BeautifulSoup`.
-  - **LLM**: [job_tracker/llm.py](job_tracker/llm.py) uses OpenAI to extract structured data and generate insights (rating, fit, notes) based on the job description and [user_profile.md](user_profile.md).
-- **Calendar Integration**: Google Calendar sync for follow-ups and interviews via [job_tracker/calendar_utils.py](job_tracker/calendar_utils.py).
+  - **Scraper**: [job_tracker/scraper.py](job_tracker/scraper.py) fetches LinkedIn job pages using `requests` and `BeautifulSoup`.
+  - **LLM**: [job_tracker/llm.py](job_tracker/llm.py) uses OpenAI to extract structured data and generate insights (rating, fit, notes) based on [user_profile.md](user_profile.md).
+- **Calendar Integration**: Google Calendar sync for interviews via [job_tracker/calendar_utils.py](job_tracker/calendar_utils.py).
 
 ## Key Patterns & Conventions
 
@@ -25,11 +26,11 @@
 - **Running the App**: `python -m job_tracker.main [COMMAND]`.
 - **Adding Commands**: Create new file in [job_tracker/commands/](job_tracker/commands/), register in [job_tracker/main.py](job_tracker/main.py).
 - **Adding Jobs**: The `add` command ([job_tracker/commands/add.py](job_tracker/commands/add.py)) supports a `--url` flag to trigger scraping and LLM enrichment.
-- **Calendar Sync**: Requires `credentials.json` and `token.json`. Syncing is triggered during `add` and `edit` if dates are provided.
+- **Bulk Operations**: Use scripts in [scripts/](scripts/) (e.g., `bulk_add.py`) for processing multiple URLs from `bulk_urls.txt`.
 
 ## Integration Points
 
-- **Google Calendar**: Events identified by `followup_event_id` and `interview_event_id` in DB.
+- **Google Calendar**: Events identified by `interview_event_id` in DB. Requires `credentials.json` and `token.json`.
 - **OpenAI API**: Used for job data extraction and analysis.
 - **LinkedIn**: Scraped for job details.
 - **CSV Export**: `view` command supports `--export`.

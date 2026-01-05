@@ -109,20 +109,6 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             break
         console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
-    # Calculate default follow-up date (10 days after applied date)
-    try:
-        applied_dt = date.fromisoformat(job_data["date_applied"])
-        default_followup = (applied_dt + timedelta(days=10)).isoformat()
-    except (ValueError, TypeError):
-        default_followup = ""
-
-    while True:
-        followup_date = typer.prompt("Follow-up Date (YYYY-MM-DD)", default=default_followup)
-        if validate_date(followup_date):
-            job_data["followup_date"] = followup_date
-            break
-        console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
-
     while True:
         response_date = typer.prompt("Response Date (YYYY-MM-DD)", default="")
         if validate_date(response_date):
@@ -176,12 +162,6 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
         from job_tracker.calendar_utils import sync_event
 
         calendar_updates = {}
-        if final_data.get("followup_date"):
-            console.print("[dim]Syncing follow-up with Google Calendar...[/dim]")
-            f_id = sync_event(final_data, "followup")
-            if f_id:
-                calendar_updates["followup_event_id"] = f_id
-
         if final_data.get("interview_time"):
             console.print("[dim]Syncing interview with Google Calendar...[/dim]")
             i_id = sync_event(final_data, "interview")

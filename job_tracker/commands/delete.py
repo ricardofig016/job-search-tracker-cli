@@ -27,9 +27,6 @@ def delete(job_id: int = typer.Argument(..., help="The ID of the job application
         # Delete calendar events if they exist
         from job_tracker.calendar_utils import delete_event
 
-        if job.get("followup_event_id"):
-            console.print("[dim]Deleting follow-up from Google Calendar...[/dim]")
-            delete_event(job["followup_event_id"])
         if job.get("interview_event_id"):
             console.print("[dim]Deleting interview from Google Calendar...[/dim]")
             delete_event(job["interview_event_id"])

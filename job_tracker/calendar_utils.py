@@ -5,7 +5,7 @@ from job_tracker.calendar_auth import get_calendar_service
 def format_event_body(job_data: dict, action_type: str):
     """
     Formats the Google Calendar event body based on job data and action type.
-    action_type: 'followup' or 'interview'
+    action_type: 'interview'
     """
     company = job_data.get("company_name", "Unknown Company").upper()
     role = job_data.get("role_name", "Unknown Role").upper()
@@ -36,23 +36,15 @@ def format_event_body(job_data: dict, action_type: str):
     description = "\n".join(description_parts)
 
     # Time handling
-    if action_type == "followup":
-        # 8 AM WET (UTC+0)
-        date_str = job_data.get("followup_date")
-        if not date_str:
-            return None
-        start_time = f"{date_str}T08:00:00Z"
-        end_time = f"{date_str}T08:30:00Z"
-    else:
-        # Interview time (YYYY-MM-DD HH:MM)
-        dt_str = job_data.get("interview_time")
-        if not dt_str:
-            return None
-        # Convert YYYY-MM-DD HH:MM to ISO format YYYY-MM-DDTHH:MM:SSZ
-        # Assuming input is already in WET/UTC
-        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
-        start_time = dt.strftime("%Y-%m-%dT%H:%M:00Z")
-        end_time = (dt + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:00Z")
+    # Interview time (YYYY-MM-DD HH:MM)
+    dt_str = job_data.get("interview_time")
+    if not dt_str:
+        return None
+    # Convert YYYY-MM-DD HH:MM to ISO format YYYY-MM-DDTHH:MM:SSZ
+    # Assuming input is already in WET/UTC
+    dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+    start_time = dt.strftime("%Y-%m-%dT%H:%M:00Z")
+    end_time = (dt + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:00Z")
 
     return {
         "summary": title,
@@ -74,8 +66,7 @@ def sync_event(job_data: dict, action_type: str):
         if not event_body:
             return None
 
-        id_field = "followup_event_id" if action_type == "followup" else "interview_event_id"
-        event_id = job_data.get(id_field)
+        event_id = job_data.get("interview_event_id")
 
         if event_id:
             try:

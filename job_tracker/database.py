@@ -43,12 +43,10 @@ def initialize_db():
         status TEXT DEFAULT 'applied' CHECK(status IN ('applied', 'rejected', 'accepted', 'interviewing', 'offered')),
         date_posted DATE,
         date_applied DATE,
-        followup_date DATE,
         response_date DATE,
         interview_time DATETIME,
         interview_type TEXT,
         interview_link TEXT,
-        followup_event_id TEXT,
         interview_event_id TEXT,
         offer TEXT,
         rating INTEGER CHECK(rating >= 1 AND rating <= 5),
@@ -83,14 +81,6 @@ def run_migrations():
         if "interview_link" not in columns:
             try:
                 conn.execute("ALTER TABLE jobs ADD COLUMN interview_link TEXT")
-                conn.commit()
-            except sqlite3.OperationalError:
-                pass
-
-        # Add followup_event_id if it doesn't exist
-        if "followup_event_id" not in columns:
-            try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN followup_event_id TEXT")
                 conn.commit()
             except sqlite3.OperationalError:
                 pass
