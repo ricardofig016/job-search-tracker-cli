@@ -1,7 +1,36 @@
 import re
+import click
 from typing import List, Tuple, Any, Dict
 
 from datetime import date
+
+
+NULL_STRINGS = ["-", "null", "none", "unknown", "na", "idk"]
+
+
+def is_null_string(val: Any) -> bool:
+    """Checks if a value is considered 'null' or 'empty' by the user."""
+    if val is None:
+        return True
+    if isinstance(val, str):
+        return val.lower().strip() in NULL_STRINGS or not val.strip()
+    return False
+
+
+class NullableChoice(click.Choice):
+    """A click.Choice that accepts all NULL_STRINGS but only displays 'null'."""
+
+    def __init__(self, choices, case_sensitive=False):
+        # Add 'null' to the visible choices if not already there
+        visible_choices = list(choices)
+        if "null" not in [c.lower() for c in visible_choices]:
+            visible_choices.append("null")
+        super().__init__(visible_choices, case_sensitive=case_sensitive)
+
+    def convert(self, value, param, ctx):
+        if is_null_string(value):
+            return "null"
+        return super().convert(value, param, ctx)
 
 
 def validate_date(date_str: str) -> bool:

@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from rich.console import Console
 from job_tracker.database import add_job, update_job, get_job_by_url
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
-from job_tracker.utils import validate_date, validate_datetime
+from job_tracker.utils import validate_date, validate_datetime, is_null_string, NullableChoice
 from pathlib import Path
 
 console = Console()
@@ -54,7 +54,8 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             console.print(f"[bold red]Error scraping URL:[/bold red] {e}")
             console.print("Proceeding with manual entry...")
 
-    console.print("Please provide the following details (press Enter to skip optional fields):\n")
+    console.print("Please provide the following details (press Enter to skip optional fields).")
+    console.print("[dim]Tip: You can input 'null' to clear a field or skip it.[/dim]\n")
 
     job_data = {}
 
@@ -75,10 +76,10 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             return val
         return enum_cls(list(enum_cls)[0]).value  # Default to first item if not found/invalid
 
-    job_data["arrangement"] = typer.prompt("Arrangement", default=scraped_data.get("arrangement") or Arrangement.REMOTE.value, type=click.Choice([e.value for e in Arrangement]))
-    job_data["type"] = typer.prompt("Job Type", default=scraped_data.get("type") or JobType.FULLTIME.value, type=click.Choice([e.value for e in JobType]))
-    job_data["level"] = typer.prompt("Experience Level", default=scraped_data.get("level") or ExperienceLevel.MID_LEVEL.value, type=click.Choice([e.value for e in ExperienceLevel]))
-    job_data["source"] = typer.prompt("Source", default=scraped_data.get("source") or Source.LINKEDIN.value, type=click.Choice([e.value for e in Source]))
+    job_data["arrangement"] = typer.prompt("Arrangement", default=scraped_data.get("arrangement") or Arrangement.REMOTE.value, type=NullableChoice([e.value for e in Arrangement]))
+    job_data["type"] = typer.prompt("Job Type", default=scraped_data.get("type") or JobType.FULLTIME.value, type=NullableChoice([e.value for e in JobType]))
+    job_data["level"] = typer.prompt("Experience Level", default=scraped_data.get("level") or ExperienceLevel.MID_LEVEL.value, type=NullableChoice([e.value for e in ExperienceLevel]))
+    job_data["source"] = typer.prompt("Source", default=scraped_data.get("source") or Source.LINKEDIN.value, type=NullableChoice([e.value for e in Source]))
     job_data["location"] = typer.prompt("Location (e.g., City, Country)", default=scraped_data.get("location") or "")
 
     # Recruiter
@@ -91,11 +92,12 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
     job_data["notes"] = typer.prompt("Notes", default=scraped_data.get("notes") or "")
 
     # Status & Dates
-    job_data["status"] = typer.prompt("Status", default=Status.APPLIED.value, type=click.Choice([e.value for e in Status]))
+    job_data["status"] = typer.prompt("Status", default=Status.APPLIED.value, type=NullableChoice([e.value for e in Status]))
 
     while True:
         date_posted = typer.prompt("Date Posted (YYYY-MM-DD)", default=scraped_data.get("date_posted") or "")
-        if not date_posted:  # Allow empty
+        if is_null_string(date_posted):
+            job_data["date_posted"] = None
             break
         if validate_date(date_posted):
             job_data["date_posted"] = date_posted
@@ -104,6 +106,9 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
 
     while True:
         date_applied_str = typer.prompt("Date Applied (YYYY-MM-DD)", default=date.today().isoformat())
+        if is_null_string(date_applied_str):
+            job_data["date_applied"] = None
+            break
         if validate_date(date_applied_str):
             job_data["date_applied"] = date_applied_str
             break
@@ -111,6 +116,9 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
 
     while True:
         response_date = typer.prompt("Response Date (YYYY-MM-DD)", default="")
+        if is_null_string(response_date):
+            job_data["response_date"] = None
+            break
         if validate_date(response_date):
             job_data["response_date"] = response_date
             break
@@ -119,6 +127,9 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
     # Interview
     while True:
         interview_time = typer.prompt("Interview Time (YYYY-MM-DD HH:MM)", default="")
+        if is_null_string(interview_time):
+            job_data["interview_time"] = None
+            break
         if validate_datetime(interview_time):
             job_data["interview_time"] = interview_time
             break
@@ -130,29 +141,38 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
 
     # Ratings
     while True:
-        rating = typer.prompt("Job Rating (1-5)", default=scraped_data.get("rating") or 0, type=int)
-        if 0 <= rating <= 5:
-            job_data["rating"] = rating
+        rating_str = typer.prompt("Job Rating (1-5)", default=str(scraped_data.get("rating") or 0))
+        if is_null_string(rating_str) or rating_str == "0":
+            job_data["rating"] = None
             break
+        try:
+            rating = int(rating_str)
+            if 1 <= rating <= 5:
+                job_data["rating"] = rating
+                break
+        except ValueError:
+            pass
         console.print("[bold red]Error:[/bold red] Rating must be between 1 and 5 (or 0 to skip).")
 
     while True:
-        fit = typer.prompt("Job Fit (1-5)", default=scraped_data.get("fit") or 0, type=int)
-        if 0 <= fit <= 5:
-            job_data["fit"] = fit
+        fit_str = typer.prompt("Job Fit (1-5)", default=str(scraped_data.get("fit") or 0))
+        if is_null_string(fit_str) or fit_str == "0":
+            job_data["fit"] = None
             break
+        try:
+            fit = int(fit_str)
+            if 1 <= fit <= 5:
+                job_data["fit"] = fit
+                break
+        except ValueError:
+            pass
         console.print("[bold red]Error:[/bold red] Fit must be between 1 and 5 (or 0 to skip).")
 
     job_data["feedback"] = typer.prompt("Feedback", default="")
     job_data["application_method"] = typer.prompt("Application Method", default="easy apply")
 
     # Clean up empty strings for optional fields (convert to None for DB)
-    final_data = {k: (v if v != "" else None) for k, v in job_data.items()}
-    # Handle 0 for rating/fit as None if not provided
-    if final_data.get("rating") == 0:
-        final_data["rating"] = None
-    if final_data.get("fit") == 0:
-        final_data["fit"] = None
+    final_data = {k: (v if not is_null_string(v) else None) for k, v in job_data.items()}
 
     try:
         job_id = add_job(final_data)

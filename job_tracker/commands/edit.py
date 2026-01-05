@@ -5,7 +5,7 @@ from rich.console import Console
 from rich.table import Table
 from job_tracker.database import get_job_by_id, update_job
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
-from job_tracker.utils import validate_date, validate_datetime
+from job_tracker.utils import validate_date, validate_datetime, is_null_string, NullableChoice
 
 console = Console()
 
@@ -19,6 +19,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
         raise typer.Exit(1)
 
     console.print(f"[bold blue]Editing Job ID: {job_id}[/bold blue]")
+    console.print("[dim]Tip: You can input 'none' to clear a field.[/dim]")
 
     updates = {}
 
@@ -65,8 +66,8 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
         # Prompt for new value with validation
         if field_to_edit in enum_fields:
             enum_cls = enum_fields[field_to_edit]
-            new_value = typer.prompt(f"Enter new value for {field_to_edit}", default=str(job[field_to_edit]) if job[field_to_edit] is not None else "", type=click.Choice([e.value for e in enum_cls]))
-            updates[field_to_edit] = new_value
+            new_value = typer.prompt(f"Enter new value for {field_to_edit}", default=str(job[field_to_edit]) if job[field_to_edit] is not None else "", type=NullableChoice([e.value for e in enum_cls]))
+            updates[field_to_edit] = None if is_null_string(new_value) else new_value
         elif field_to_edit in date_fields:
             while True:
                 default_val = str(job[field_to_edit]) if job[field_to_edit] is not None else ""
@@ -74,21 +75,27 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
                     default_val = date.today().isoformat()
 
                 new_value = typer.prompt(f"Enter new value for {field_to_edit} (YYYY-MM-DD)", default=default_val)
+                if is_null_string(new_value):
+                    updates[field_to_edit] = None
+                    break
                 if validate_date(new_value):
-                    updates[field_to_edit] = new_value if new_value != "" else None
+                    updates[field_to_edit] = new_value
                     break
                 console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
         elif field_to_edit in datetime_fields:
             while True:
                 new_value = typer.prompt(f"Enter new value for {field_to_edit} (YYYY-MM-DD HH:MM)", default=str(job[field_to_edit]) if job[field_to_edit] is not None else "")
+                if is_null_string(new_value):
+                    updates[field_to_edit] = None
+                    break
                 if validate_datetime(new_value):
-                    updates[field_to_edit] = new_value if new_value != "" else None
+                    updates[field_to_edit] = new_value
                     break
                 console.print("[bold red]Error:[/bold red] Invalid format. Please use YYYY-MM-DD HH:MM.")
         elif field_to_edit in ["rating", "fit"]:
             while True:
                 new_value = typer.prompt(f"Enter new value for {field_to_edit} (1-5)", default=str(job[field_to_edit]) if job[field_to_edit] is not None else "")
-                if new_value == "":
+                if is_null_string(new_value):
                     updates[field_to_edit] = None
                     break
                 try:
@@ -101,7 +108,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
                     console.print("[bold red]Error:[/bold red] Value must be an integer.")
         else:
             new_value = typer.prompt(f"Enter new value for {field_to_edit}", default=str(job[field_to_edit]) if job[field_to_edit] is not None else "")
-            updates[field_to_edit] = new_value if new_value != "" else None
+            updates[field_to_edit] = None if is_null_string(new_value) else new_value
 
     if updates:
         try:

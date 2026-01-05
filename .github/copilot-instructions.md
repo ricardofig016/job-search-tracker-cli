@@ -15,6 +15,7 @@
 
 - **Field Mapping**: Always use `COLUMN_MAPPING` in [job_tracker/utils.py](job_tracker/utils.py) to translate between CLI-friendly names (e.g., `company`) and database column names (e.g., `company_name`).
 - **Enums & Validation**: Use `Enum` classes in [job_tracker/models.py](job_tracker/models.py) for fields like `status`, `arrangement`, and `level`. Use `validate_date` and `validate_datetime` from [job_tracker/utils.py](job_tracker/utils.py).
+  - **Null-like Inputs**: Use `is_null_string` and `NULL_STRINGS` from [job_tracker/utils.py](job_tracker/utils.py) to allow users to input values like `-`, `none`, or `null` to represent empty fields in prompts.
 - **Database Operations**: All SQL logic resides in [job_tracker/database.py](job_tracker/database.py). Use `get_db()` context manager. Results are `sqlite3.Row` objects.
 - **Schema Management**: `initialize_db()` creates tables. `run_migrations()` handles updates. Use `add_new_column()` for dynamic schema changes.
 - **Filtering & Sorting**: Use `parse_filter_string` and `parse_sort_string` from [job_tracker/utils.py](job_tracker/utils.py).
