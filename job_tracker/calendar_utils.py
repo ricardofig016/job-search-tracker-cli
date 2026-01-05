@@ -7,8 +7,8 @@ def format_event_body(job_data: dict, action_type: str):
     Formats the Google Calendar event body based on job data and action type.
     action_type: 'interview'
     """
-    company = job_data.get("company_name", "Unknown Company").upper()
-    role = job_data.get("role_name", "Unknown Role").upper()
+    company = (job_data.get("company_name") or "Unknown Company").upper()
+    role = (job_data.get("role_name") or "Unknown Role").upper()
 
     title = f"JOB TRACKER - {action_type.capitalize()} with {company} for {role}"
 

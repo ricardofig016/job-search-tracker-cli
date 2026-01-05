@@ -25,10 +25,10 @@ def initialize_db():
     query = """
     CREATE TABLE IF NOT EXISTS jobs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        company_name TEXT NOT NULL,
+        company_name TEXT,
         company_url TEXT,
         company_linkedin TEXT,
-        role_name TEXT NOT NULL,
+        role_name TEXT,
         role_url TEXT,
         location TEXT,
         arrangement TEXT CHECK(arrangement IN ('onsite', 'hybrid', 'remote')),
@@ -52,7 +52,10 @@ def initialize_db():
         rating INTEGER CHECK(rating >= 1 AND rating <= 5),
         fit INTEGER CHECK(fit >= 1 AND fit <= 5),
         feedback TEXT,
-        application_method TEXT
+        application_method TEXT,
+        followup_date DATE,
+        calendar_event_id TEXT,
+        followup_event_id TEXT
     );
     """
     with get_db() as conn:
