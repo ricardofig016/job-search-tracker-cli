@@ -68,17 +68,50 @@ def stats(
     company_counts = Counter(j["company_name"] for j in jobs if j["company_name"])
 
     # Funnel Metrics
-    interviews = sum(1 for j in jobs if j["status"] in ("interviewing", "offered", "accepted"))
+    # Improved interview detection: includes anyone who reached interview stage even if later rejected
+    interviewed_jobs = [j for j in jobs if j["status"] in ("interviewing", "offered", "accepted") or j["interview_time"] or j["interview_response_date"]]
+    interviews = len(interviewed_jobs)
     offers = sum(1 for j in jobs if j["status"] in ("offered", "accepted"))
     rejections = status_counts.get("rejected", 0)
+    rejections_post_interview = sum(1 for j in interviewed_jobs if j["status"] == "rejected")
+    rejections_pre_interview = rejections - rejections_post_interview
+
     accepted = status_counts.get("accepted", 0)
     ghosted = status_counts.get("ghosted", 0)
     awaiting = sum(1 for j in jobs if j["status"] == "applied" and not j["application_response_date"] and not j["interview_response_date"])
+    # Consider a job "currently interviewing" if it's in the interview stage but hasn't reached an offer or rejection.
+    currently_interviewing = sum(1 for j in interviewed_jobs if j["status"] in ("applied", "interviewing"))
+    pending_offers = sum(1 for j in jobs if j["status"] == "offered")
 
-    interview_rate = (interviews / total_count * 100) if total_count > 0 else 0
-    offer_rate = (offers / interviews * 100) if interviews > 0 else 0
+    # Conversion Rates (Calculated using "settled" applications only)
+    # A job is settled for a specific stage if it has a definitive outcome for that stage.
+
+    # 1. App -> Interview: Settled if they responded (Total minus those still waiting for first word).
+    settled_apps_count = total_count - awaiting
+
+    # 2. Int -> Offer: Settled if interview process finished (Interviewed minus those still interviewing).
+    settled_interviews_count = interviews - currently_interviewing
+
+    # 3. Offer -> Accepted: Settled if offer decision made (Offered minus those still pending).
+    settled_offers_count = offers - pending_offers
+
+    # 4. Overall: Settled if the whole process reached a terminal status.
+    terminal_settled_count = sum(1 for j in jobs if j["status"] in ("ghosted", "rejected", "offered", "accepted"))
+
+    app_to_interview_rate = (interviews / settled_apps_count * 100) if settled_apps_count > 0 else 0
+    interview_to_offer_rate = (offers / settled_interviews_count * 100) if settled_interviews_count > 0 else 0
+    offer_to_acceptance_rate = (accepted / settled_offers_count * 100) if settled_offers_count > 0 else 0
+
+    # Overall rates based on terminal settled applications
+    overall_success_rate = (accepted / terminal_settled_count * 100) if terminal_settled_count > 0 else 0
+    overall_offer_rate = (offers / terminal_settled_count * 100) if terminal_settled_count > 0 else 0
+
+    # Total-based rates (for Funnel)
+    total_interview_rate = (interviews / total_count * 100) if total_count > 0 else 0
+    total_offer_rate = (offers / total_count * 100) if total_count > 0 else 0
+    total_success_rate = (accepted / total_count * 100) if total_count > 0 else 0
+
     rejection_rate = (rejections / total_count * 100) if total_count > 0 else 0
-    success_rate = (accepted / total_count * 100) if total_count > 0 else 0
     ghosted_rate = (ghosted / total_count * 100) if total_count > 0 else 0
     awaiting_rate = (awaiting / total_count * 100) if total_count > 0 else 0
 
@@ -125,12 +158,15 @@ def stats(
     console.print(f"\n[bold blue]Job Search Analytics Dashboard[/bold blue] ({total_count} Applications)\n")
 
     # Funnel Panel
-    funnel_text = f"Total Applications: [bold]{total_count}[/bold]\n" f"Awaiting:           [bold yellow]{awaiting}[/bold yellow] ({awaiting_rate:.1f}%)\n" f"Ghosted:            [bold grey53]{ghosted}[/bold grey53] ({ghosted_rate:.1f}%)\n" f"Rejections:         [bold red]{rejections}[/bold red] ({rejection_rate:.1f}%)\n" f"Interviews:         [bold cyan]{interviews}[/bold cyan] ({interview_rate:.1f}%)\n" f"Offers:             [bold green]{offers}[/bold green] ({offer_rate:.1f}% of interviews)\n" f"Accepted:           [bold gold1]{accepted}[/bold gold1] ({success_rate:.1f}% total success)"
+    funnel_text = f"Total Applications: [bold]{total_count}[/bold]\n" f"Awaiting:           [bold yellow]{awaiting}[/bold yellow] ({awaiting_rate:.1f}%)\n" f"Ghosted:            [bold grey53]{ghosted}[/bold grey53] ({ghosted_rate:.1f}%)\n" f"Rejections:         [bold red]{rejections}[/bold red] ({rejection_rate:.1f}%)\n" f"  [dim]- Pre-int:[/dim]      [dim red]{rejections_pre_interview}[/dim red]\n" f"  [dim]- Post-int:[/dim]     [dim red]{rejections_post_interview}[/dim red]\n" f"Interviews:         [bold cyan]{interviews}[/bold cyan] ({total_interview_rate:.1f}%)\n" f"Offers:             [bold green]{offers}[/bold green] ({total_offer_rate:.1f}%)\n" f"Accepted:           [bold gold1]{accepted}[/bold gold1] ({total_success_rate:.1f}% total success)"
+
+    # Conversion Rates Panel
+    conv_text = f"App -> Interview:   [bold cyan]{app_to_interview_rate:.1f}%[/bold cyan]\n" f"Int -> Offer:       [bold green]{interview_to_offer_rate:.1f}%[/bold green]\n" f"Offer -> Accepted:  [bold gold1]{offer_to_acceptance_rate:.1f}%[/bold gold1]\n" f"Overall Success:    [bold]{overall_success_rate:.1f}%[/bold]"
 
     # Performance Panel
     perf_text = f"Avg Job Rating:     [bold]{avg_rating:.1f}/5.0[/bold]\n" f"Avg Job Fit:        [bold]{avg_fit:.1f}/5.0[/bold]\n" f"Avg Response Time:  [bold]{f'{avg_response_time:.1f} days' if avg_response_time is not None else 'N/A'}[/bold]\n" f"Avg Time to Int:    [bold]{f'{avg_interview_time:.1f} days' if avg_interview_time is not None else 'N/A'}[/bold]"
 
-    console.print(Columns([Panel(funnel_text, title="Application Funnel", expand=True), Panel(perf_text, title="Performance Metrics", expand=True)]))
+    console.print(Columns([Panel(funnel_text, title="Application Funnel", expand=True), Panel(conv_text, title="Conversion Rates", expand=True), Panel(perf_text, title="Performance Metrics", expand=True)]))
 
     # Breakdowns
     breakdown_cols = []
@@ -224,8 +260,9 @@ def stats(
 
     # 5. Quality Analysis
     # Compare avg rating/fit of interviewed vs non-interviewed
-    interviewed_jobs = [j for j in jobs if j["status"] in ("interviewing", "offered", "accepted")]
-    non_interviewed_jobs = [j for j in jobs if j["status"] not in ("interviewing", "offered", "accepted")]
+    # interviewed_jobs already defined above
+    interviewed_ids = {j["id"] for j in interviewed_jobs}
+    non_interviewed_jobs = [j for j in jobs if j["id"] not in interviewed_ids]
 
     def get_avg(job_list, key):
         vals = [j[key] for j in job_list if j[key] is not None]
@@ -237,6 +274,11 @@ def stats(
     avg_fit_non = get_avg(non_interviewed_jobs, "fit")
 
     quality_table = Table(title="Quality Analysis (Interviewed vs. Others)", show_header=True, header_style="bold green", box=box.ROUNDED)
+    quality_table.add_column("Metric")
+    quality_table.add_column("Interviewed", justify="right")
+    quality_table.add_column("Others", justify="right")
+
     quality_table.add_row("Avg Fit", f"{avg_fit_int:.1f}", f"{avg_fit_non:.1f}")
+    quality_table.add_row("Avg Rating", f"{avg_rating_int:.1f}", f"{avg_rating_non:.1f}")
 
     console.print(quality_table)
