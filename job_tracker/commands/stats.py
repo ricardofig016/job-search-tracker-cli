@@ -123,25 +123,54 @@ def stats(
     avg_fit = sum(fits) / len(fits) if fits else 0
 
     # Response & Interview Time
-    response_times = []
-    interview_lead_times = []
+    app_to_rej_times = []
+    app_to_int_times = []
+    int_to_rej_times = []
+    int_to_offer_times = []
+
+    interview_ids = {j["id"] for j in interviewed_jobs}
+
     for j in jobs:
         d_applied = _parse_dt(j["date_applied"])
-        if d_applied:
-            d_resp = _parse_dt(j["application_response_date"])
-            if d_resp:
-                delta = (d_resp - d_applied).days
-                if delta >= 0:
-                    response_times.append(delta)
+        d_resp = _parse_dt(j["application_response_date"])
+        d_int = _parse_dt(j["interview_time"])
+        d_int_resp = _parse_dt(j["interview_response_date"])
 
-            d_int = _parse_dt(j["interview_time"])
-            if d_int:
-                delta = (d_int - d_applied).days
-                if delta >= 0:
-                    interview_lead_times.append(delta)
+        is_interview = j["id"] in interview_ids
 
-    avg_response_time = sum(response_times) / len(response_times) if response_times else None
-    avg_interview_time = sum(interview_lead_times) / len(interview_lead_times) if interview_lead_times else None
+        # 1. App -> Rejection (Only if not interviewed and rejected)
+        if d_applied and d_resp and not is_interview and j["status"] == "rejected":
+            delta = (d_resp - d_applied).days
+            if delta >= 0:
+                app_to_rej_times.append(delta)
+
+        # 2. App -> Interview (If interviewed)
+        # Identify "response" as the invite date.
+        # Sometimes d_resp is used for invite date.
+        if d_applied and d_resp and is_interview:
+            delta = (d_resp - d_applied).days
+            if delta >= 0:
+                app_to_int_times.append(delta)
+
+        # 3. Interview -> Rejection
+        if d_int and d_int_resp and j["status"] == "rejected":
+            delta = (d_int_resp - d_int).days
+            if delta >= 0:
+                int_to_rej_times.append(delta)
+
+        # 4. Interview -> Offer (Offered/Accepted/Refused)
+        if d_int and d_int_resp and j["status"] in ("offered", "accepted", "refused"):
+            delta = (d_int_resp - d_int).days
+            if delta >= 0:
+                int_to_offer_times.append(delta)
+
+    def avg(lst):
+        return sum(lst) / len(lst) if lst else None
+
+    avg_app_rej = avg(app_to_rej_times)
+    avg_app_int = avg(app_to_int_times)
+    avg_int_rej = avg(int_to_rej_times)
+    avg_int_offer = avg(int_to_offer_times)
 
     # Trends
     weekly_apps = defaultdict(int)
@@ -163,10 +192,13 @@ def stats(
     # Conversion Rates Panel
     conv_text = f"App -> Interview:   [bold cyan]{app_to_interview_rate:.1f}%[/bold cyan]\n" f"Int -> Offer:       [bold green]{interview_to_offer_rate:.1f}%[/bold green]\n" f"Offer -> Accepted:  [bold gold1]{offer_to_acceptance_rate:.1f}%[/bold gold1]\n" f"Overall Success:    [bold]{overall_success_rate:.1f}%[/bold]"
 
-    # Performance Panel
-    perf_text = f"Avg Job Rating:     [bold]{avg_rating:.1f}/5.0[/bold]\n" f"Avg Job Fit:        [bold]{avg_fit:.1f}/5.0[/bold]\n" f"Avg Response Time:  [bold]{f'{avg_response_time:.1f} days' if avg_response_time is not None else 'N/A'}[/bold]\n" f"Avg Time to Int:    [bold]{f'{avg_interview_time:.1f} days' if avg_interview_time is not None else 'N/A'}[/bold]"
+    # Response Times Panel
+    def fmt_days(d):
+        return f"{d:.1f} days" if d is not None else "N/A"
 
-    console.print(Columns([Panel(funnel_text, title="Application Funnel", expand=True), Panel(conv_text, title="Conversion Rates", expand=True), Panel(perf_text, title="Performance Metrics", expand=True)]))
+    resp_text = f"App -> Rej Time:    [bold]{fmt_days(avg_app_rej)}[/bold]\n" f"App -> Int Time:    [bold]{fmt_days(avg_app_int)}[/bold]\n" f"Int -> Rej Time:    [bold]{fmt_days(avg_int_rej)}[/bold]\n" f"Int -> Offer Time:  [bold]{fmt_days(avg_int_offer)}[/bold]"
+
+    console.print(Columns([Panel(funnel_text, title="Application Funnel", expand=True), Panel(conv_text, title="Conversion Rates", expand=True), Panel(resp_text, title="Response Times", expand=True)]))
 
     # Breakdowns
     breakdown_cols = []
@@ -259,26 +291,56 @@ def stats(
         console.print()
 
     # 5. Quality Analysis
-    # Compare avg rating/fit of interviewed vs non-interviewed
-    # interviewed_jobs already defined above
     interviewed_ids = {j["id"] for j in interviewed_jobs}
     non_interviewed_jobs = [j for j in jobs if j["id"] not in interviewed_ids]
 
-    def get_avg(job_list, key):
-        vals = [j[key] for j in job_list if j[key] is not None]
-        return sum(vals) / len(vals) if vals else 0
+    def get_detailed_stats(job_list):
+        total = len(job_list)
+        if total == 0:
+            return {"count": 0, "avg_fit": 0, "avg_rating": 0, "top_fit": 0, "top_rating": 0}
 
-    avg_rating_int = get_avg(interviewed_jobs, "rating")
-    avg_fit_int = get_avg(interviewed_jobs, "fit")
-    avg_rating_non = get_avg(non_interviewed_jobs, "rating")
-    avg_fit_non = get_avg(non_interviewed_jobs, "fit")
+        fits = [j["fit"] for j in job_list if j["fit"] is not None]
+        ratings = [j["rating"] for j in job_list if j["rating"] is not None]
 
-    quality_table = Table(title="Quality Analysis (Interviewed vs. Others)", show_header=True, header_style="bold green", box=box.ROUNDED)
+        return {"count": total, "avg_fit": sum(fits) / len(fits) if fits else 0, "avg_rating": sum(ratings) / len(ratings) if ratings else 0, "top_fit": (sum(1 for f in fits if f >= 4) / len(fits) * 100) if fits else 0, "top_rating": (sum(1 for r in ratings if r >= 4) / len(ratings) * 100) if ratings else 0}
+
+    all_stats = get_detailed_stats(jobs)
+    int_stats = get_detailed_stats(interviewed_jobs)
+    non_stats = get_detailed_stats(non_interviewed_jobs)
+
+    quality_table = Table(title="Quality Comparison: Interviewed vs. Others", show_header=True, header_style="bold green", box=box.ROUNDED)
     quality_table.add_column("Metric")
-    quality_table.add_column("Interviewed", justify="right")
-    quality_table.add_column("Others", justify="right")
+    quality_table.add_column("Overall", justify="right")
+    quality_table.add_column("Interviewed", justify="right", style="cyan")
+    quality_table.add_column("Others", justify="right", style="dim")
 
-    quality_table.add_row("Avg Fit", f"{avg_fit_int:.1f}", f"{avg_fit_non:.1f}")
-    quality_table.add_row("Avg Rating", f"{avg_rating_int:.1f}", f"{avg_rating_non:.1f}")
+    quality_table.add_row("Applications", str(all_stats["count"]), str(int_stats["count"]), str(non_stats["count"]))
+    quality_table.add_row("Avg Fit (1-5)", f"{all_stats['avg_fit']:.1f}", f"{int_stats['avg_fit']:.1f}", f"{non_stats['avg_fit']:.1f}")
+    quality_table.add_row("Avg Rating (1-5)", f"{all_stats['avg_rating']:.1f}", f"{int_stats['avg_rating']:.1f}", f"{non_stats['avg_rating']:.1f}")
+    quality_table.add_row("High Fit (4+) %", f"{all_stats['top_fit']:.1f}%", f"{int_stats['top_fit']:.1f}%", f"{non_stats['top_fit']:.1f}%")
+    quality_table.add_row("High Rating (4+) %", f"{all_stats['top_rating']:.1f}%", f"{int_stats['top_rating']:.1f}%", f"{non_stats['top_rating']:.1f}%")
 
-    console.print(quality_table)
+    # Success by Fit Level
+    fit_groups = {
+        "Excellent (5)": [j for j in jobs if j["fit"] == 5],
+        "Good (4)": [j for j in jobs if j["fit"] == 4],
+        "Average (3)": [j for j in jobs if j["fit"] == 3],
+        "Low (2)": [j for j in jobs if j["fit"] == 2],
+        "Poor (1)": [j for j in jobs if j["fit"] == 1],
+    }
+
+    fit_success_table = Table(title="Interview Success by Fit Level", show_header=True, header_style="bold blue", box=box.ROUNDED)
+    fit_success_table.add_column("Fit Level")
+    fit_success_table.add_column("Total Apps", justify="right")
+    fit_success_table.add_column("Interviewed", justify="right")
+    fit_success_table.add_column("Int. Rate", justify="right", style="bold")
+
+    for label, group_jobs in fit_groups.items():
+        if not group_jobs:
+            continue
+        g_count = len(group_jobs)
+        g_int = sum(1 for j in group_jobs if j["id"] in interviewed_ids)
+        g_rate = g_int / g_count * 100
+        fit_success_table.add_row(label, str(g_count), str(g_int), f"{g_rate:.1f}%")
+
+    console.print(Columns([quality_table, fit_success_table], equal=True))
