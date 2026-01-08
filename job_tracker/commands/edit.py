@@ -5,7 +5,7 @@ from rich.console import Console
 from rich.table import Table
 from job_tracker.database import get_job_by_id, update_job
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
-from job_tracker.utils import validate_date, validate_datetime, is_null_string, NullableChoice
+from job_tracker.utils import validate_date, validate_datetime, is_null_string, NullableChoice, COLUMN_MAPPING
 
 console = Console()
 
@@ -35,29 +35,43 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
     while True:
         # Display current state of the job (including pending updates)
         table = Table(title=f"Current Values for Job {job_id}")
+        table.add_column("#", style="dim")
         table.add_column("Field", style="cyan")
         table.add_column("Value", style="white")
 
-        for field in fields:
+        for i, field in enumerate(fields, 1):
             is_updated = field in updates
             current_val = updates.get(field, job[field])
             val_str = str(current_val) if current_val is not None else ""
 
             if is_updated:
-                table.add_row(field, f"[bold green]{val_str}[/bold green]")
+                table.add_row(str(i), field, f"[bold green]{val_str}[/bold green]")
             else:
-                table.add_row(field, val_str)
+                table.add_row(str(i), field, val_str)
 
         console.print(table)
 
         # Prompt for field to edit
-        field_to_edit = typer.prompt("\nEnter the field name to edit (or type 'done' to save, 'cancel' to exit)", default="done").lower()
+        field_to_edit = typer.prompt("\nEnter the field name or number to edit (or type 'done' to save, 'cancel' to exit)", default="done").lower()
 
         if field_to_edit == "done":
             break
         if field_to_edit == "cancel":
             console.print("[yellow]Edit cancelled.[/yellow]")
             raise typer.Exit()
+
+        # Handle numeric input
+        if field_to_edit.isdigit():
+            idx = int(field_to_edit) - 1
+            if 0 <= idx < len(fields):
+                field_to_edit = fields[idx]
+            else:
+                console.print(f"[bold red]Error:[/bold red] '{field_to_edit}' is not a valid field number.")
+                continue
+
+        # Handle aliases from COLUMN_MAPPING
+        if field_to_edit in COLUMN_MAPPING:
+            field_to_edit = COLUMN_MAPPING[field_to_edit]
 
         if field_to_edit not in fields:
             console.print(f"[bold red]Error:[/bold red] '{field_to_edit}' is not a valid field.")
