@@ -31,16 +31,16 @@ def initialize_db():
         role_name TEXT,
         role_url TEXT,
         location TEXT,
-        arrangement TEXT CHECK(arrangement IN ('onsite', 'hybrid', 'remote')),
-        type TEXT CHECK(type IN ('fulltime', 'contract', 'part-time', 'freelance')),
-        level TEXT CHECK(level IN ('internship', 'junior', 'mid level', 'senior', 'lead', 'manager')),
-        source TEXT CHECK(source IN ('linkedin', 'company website', 'indeed', 'glassdoor', 'referral', 'recruiter outreach', 'other')),
+        arrangement TEXT,
+        type TEXT,
+        level TEXT,
+        source TEXT,
         recruiter_name TEXT,
         recruiter_email TEXT,
         recruiter_linkedin TEXT,
         expected_salary TEXT,
         notes TEXT,
-        status TEXT DEFAULT 'applied' CHECK(status IN ('applied', 'rejected', 'accepted', 'interviewing', 'offered')),
+        status TEXT DEFAULT 'applied',
         date_posted DATE,
         date_applied DATE,
         application_response_date DATE,
@@ -50,8 +50,8 @@ def initialize_db():
         interview_link TEXT,
         interview_event_id TEXT,
         offer TEXT,
-        rating INTEGER CHECK(rating >= 1 AND rating <= 5),
-        fit INTEGER CHECK(fit >= 1 AND fit <= 5),
+        rating INTEGER,
+        fit INTEGER,
         feedback TEXT,
         application_method TEXT,
         followup_date DATE,
@@ -124,7 +124,7 @@ def run_migrations():
         # Add rating if it doesn't exist
         if "rating" not in columns:
             try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN rating INTEGER CHECK(rating >= 1 AND rating <= 5)")
+                conn.execute("ALTER TABLE jobs ADD COLUMN rating INTEGER")
                 conn.commit()
             except sqlite3.OperationalError:
                 pass
@@ -132,7 +132,7 @@ def run_migrations():
         # Add fit if it doesn't exist
         if "fit" not in columns:
             try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN fit INTEGER CHECK(fit >= 1 AND fit <= 5)")
+                conn.execute("ALTER TABLE jobs ADD COLUMN fit INTEGER")
                 conn.commit()
             except sqlite3.OperationalError:
                 pass
