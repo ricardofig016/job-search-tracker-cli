@@ -37,6 +37,7 @@ class Status(str, Enum):
     APPLIED = "applied"
     REJECTED = "rejected"
     ACCEPTED = "accepted"
+    REFUSED = "refused"
     INTERVIEWING = "interviewing"
     OFFERED = "offered"
     GHOSTED = "ghosted"

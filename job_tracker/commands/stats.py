@@ -68,15 +68,16 @@ def stats(
     company_counts = Counter(j["company_name"] for j in jobs if j["company_name"])
 
     # Funnel Metrics
-    # Improved interview detection: includes anyone who reached interview stage even if later rejected
-    interviewed_jobs = [j for j in jobs if j["status"] in ("interviewing", "offered", "accepted") or j["interview_time"] or j["interview_response_date"]]
+    # Improved interview detection: includes anyone who reached interview stage even if later rejected/refused
+    interviewed_jobs = [j for j in jobs if j["status"] in ("interviewing", "offered", "accepted", "refused") or j["interview_time"] or j["interview_response_date"]]
     interviews = len(interviewed_jobs)
-    offers = sum(1 for j in jobs if j["status"] in ("offered", "accepted"))
+    offers = sum(1 for j in jobs if j["status"] in ("offered", "accepted", "refused"))
     rejections = status_counts.get("rejected", 0)
     rejections_post_interview = sum(1 for j in interviewed_jobs if j["status"] == "rejected")
     rejections_pre_interview = rejections - rejections_post_interview
 
     accepted = status_counts.get("accepted", 0)
+    refused = status_counts.get("refused", 0)
     ghosted = status_counts.get("ghosted", 0)
     awaiting = sum(1 for j in jobs if j["status"] == "applied" and not j["application_response_date"] and not j["interview_response_date"])
     # Consider a job "currently interviewing" if it's in the interview stage but hasn't reached an offer or rejection.
@@ -95,9 +96,8 @@ def stats(
     # 3. Offer -> Accepted: Settled if offer decision made (Offered minus those still pending).
     settled_offers_count = offers - pending_offers
 
-    # 4. Overall: Settled if the whole process reached a terminal status.
-    terminal_settled_count = sum(1 for j in jobs if j["status"] in ("ghosted", "rejected", "offered", "accepted"))
-
+    # 4. Overall: Settled if the whole process reached a terminal or decisive status.
+    terminal_settled_count = sum(1 for j in jobs if j["status"] in ("ghosted", "rejected", "offered", "accepted", "refused"))
     app_to_interview_rate = (interviews / settled_apps_count * 100) if settled_apps_count > 0 else 0
     interview_to_offer_rate = (offers / settled_interviews_count * 100) if settled_interviews_count > 0 else 0
     offer_to_acceptance_rate = (accepted / settled_offers_count * 100) if settled_offers_count > 0 else 0
@@ -158,7 +158,7 @@ def stats(
     console.print(f"\n[bold blue]Job Search Analytics Dashboard[/bold blue] ({total_count} Applications)\n")
 
     # Funnel Panel
-    funnel_text = f"Total Applications: [bold]{total_count}[/bold]\n" f"Awaiting:           [bold yellow]{awaiting}[/bold yellow] ({awaiting_rate:.1f}%)\n" f"Ghosted:            [bold grey53]{ghosted}[/bold grey53] ({ghosted_rate:.1f}%)\n" f"Rejections:         [bold red]{rejections}[/bold red] ({rejection_rate:.1f}%)\n" f"  [dim]- Pre-int:[/dim]      [dim red]{rejections_pre_interview}[/dim red]\n" f"  [dim]- Post-int:[/dim]     [dim red]{rejections_post_interview}[/dim red]\n" f"Interviews:         [bold cyan]{interviews}[/bold cyan] ({total_interview_rate:.1f}%)\n" f"Offers:             [bold green]{offers}[/bold green] ({total_offer_rate:.1f}%)\n" f"Accepted:           [bold gold1]{accepted}[/bold gold1] ({total_success_rate:.1f}% total success)"
+    funnel_text = f"Total Applications: [bold]{total_count}[/bold]\n" f"Awaiting:           [bold yellow]{awaiting}[/bold yellow] ({awaiting_rate:.1f}%)\n" f"Ghosted:            [bold grey53]{ghosted}[/bold grey53] ({ghosted_rate:.1f}%)\n" f"Rejections:         [bold red]{rejections}[/bold red] ({rejection_rate:.1f}%)\n" f"  [dim]- Pre-int:[/dim]      [dim red]{rejections_pre_interview}[/dim red]\n" f"  [dim]- Post-int:[/dim]     [dim red]{rejections_post_interview}[/dim red]\n" f"Interviews:         [bold cyan]{interviews}[/bold cyan] ({total_interview_rate:.1f}%)\n" f"Offers:             [bold green]{offers}[/bold green] ({total_offer_rate:.1f}%)\n" f"  [dim]- Accepted:[/dim]      [dim green]{accepted}[/dim green]\n" f"  [dim]- Refused:[/dim]       [dim yellow]{refused}[/dim yellow]"
 
     # Conversion Rates Panel
     conv_text = f"App -> Interview:   [bold cyan]{app_to_interview_rate:.1f}%[/bold cyan]\n" f"Int -> Offer:       [bold green]{interview_to_offer_rate:.1f}%[/bold green]\n" f"Offer -> Accepted:  [bold gold1]{offer_to_acceptance_rate:.1f}%[/bold gold1]\n" f"Overall Success:    [bold]{overall_success_rate:.1f}%[/bold]"
