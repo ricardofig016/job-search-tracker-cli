@@ -29,7 +29,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
     # Map fields to their respective Enum classes for validation
     enum_fields = {"arrangement": Arrangement, "type": JobType, "level": ExperienceLevel, "source": Source, "status": Status}
 
-    date_fields = ["date_posted", "date_applied", "response_date"]
+    date_fields = ["date_posted", "date_applied", "application_response_date", "interview_response_date"]
     datetime_fields = ["interview_time"]
 
     while True:
@@ -71,7 +71,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
         elif field_to_edit in date_fields:
             while True:
                 default_val = str(job[field_to_edit]) if job[field_to_edit] is not None else ""
-                if field_to_edit == "response_date" and not default_val:
+                if field_to_edit in ["application_response_date", "interview_response_date"] and not default_val:
                     default_val = date.today().isoformat()
 
                 new_value = typer.prompt(f"Enter new value for {field_to_edit} (YYYY-MM-DD)", default=default_val)

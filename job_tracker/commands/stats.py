@@ -72,7 +72,7 @@ def stats(
     offers = sum(1 for j in jobs if j["status"] in ("offered", "accepted"))
     rejections = status_counts.get("rejected", 0)
     accepted = status_counts.get("accepted", 0)
-    no_reply = sum(1 for j in jobs if j["status"] == "applied" and not j["response_date"])
+    no_reply = sum(1 for j in jobs if j["status"] == "applied" and not j["application_response_date"])
 
     interview_rate = (interviews / total_count * 100) if total_count > 0 else 0
     offer_rate = (offers / interviews * 100) if interviews > 0 else 0
@@ -93,7 +93,7 @@ def stats(
     for j in jobs:
         d_applied = _parse_dt(j["date_applied"])
         if d_applied:
-            d_resp = _parse_dt(j["response_date"])
+            d_resp = _parse_dt(j["application_response_date"])
             if d_resp:
                 delta = (d_resp - d_applied).days
                 if delta >= 0:

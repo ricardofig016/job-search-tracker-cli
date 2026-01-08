@@ -115,12 +115,22 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
         console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
     while True:
-        response_date = typer.prompt("Response Date (YYYY-MM-DD)", default="")
-        if is_null_string(response_date):
-            job_data["response_date"] = None
+        app_response_date = typer.prompt("Application Response Date (YYYY-MM-DD)", default="")
+        if is_null_string(app_response_date):
+            job_data["application_response_date"] = None
             break
-        if validate_date(response_date):
-            job_data["response_date"] = response_date
+        if validate_date(app_response_date):
+            job_data["application_response_date"] = app_response_date
+            break
+        console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
+
+    while True:
+        int_response_date = typer.prompt("Interview Response Date (YYYY-MM-DD)", default="")
+        if is_null_string(int_response_date):
+            job_data["interview_response_date"] = None
+            break
+        if validate_date(int_response_date):
+            job_data["interview_response_date"] = int_response_date
             break
         console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
