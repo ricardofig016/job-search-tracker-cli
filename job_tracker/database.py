@@ -186,12 +186,14 @@ def update_job(job_id: int, updates: dict):
 
 
 def update_ghosted_jobs():
-    """Updates status to 'ghosted' for jobs applied > 30 days ago with status 'applied'."""
+    """Updates status to 'ghosted' for jobs applied > 30 days ago with status 'applied' and no responses."""
     query = """
     UPDATE jobs 
     SET status = 'ghosted' 
     WHERE status = 'applied' 
     AND date_applied <= date('now', '-30 days')
+    AND application_response_date IS NULL
+    AND interview_response_date IS NULL
     """
     with get_db() as conn:
         conn.execute(query)

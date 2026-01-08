@@ -72,13 +72,15 @@ def stats(
     offers = sum(1 for j in jobs if j["status"] in ("offered", "accepted"))
     rejections = status_counts.get("rejected", 0)
     accepted = status_counts.get("accepted", 0)
-    no_reply = sum(1 for j in jobs if j["status"] == "applied" and not j["application_response_date"])
+    ghosted = status_counts.get("ghosted", 0)
+    awaiting = sum(1 for j in jobs if j["status"] == "applied" and not j["application_response_date"] and not j["interview_response_date"])
 
     interview_rate = (interviews / total_count * 100) if total_count > 0 else 0
     offer_rate = (offers / interviews * 100) if interviews > 0 else 0
     rejection_rate = (rejections / total_count * 100) if total_count > 0 else 0
     success_rate = (accepted / total_count * 100) if total_count > 0 else 0
-    no_reply_rate = (no_reply / total_count * 100) if total_count > 0 else 0
+    ghosted_rate = (ghosted / total_count * 100) if total_count > 0 else 0
+    awaiting_rate = (awaiting / total_count * 100) if total_count > 0 else 0
 
     # Performance Metrics
     ratings = [j["rating"] for j in jobs if j["rating"] is not None]
@@ -123,7 +125,7 @@ def stats(
     console.print(f"\n[bold blue]Job Search Analytics Dashboard[/bold blue] ({total_count} Applications)\n")
 
     # Funnel Panel
-    funnel_text = f"Total Applications: [bold]{total_count}[/bold]\n" f"No Reply:           [bold yellow]{no_reply}[/bold yellow] ({no_reply_rate:.1f}%)\n" f"Rejections:         [bold red]{rejections}[/bold red] ({rejection_rate:.1f}%)\n" f"Interviews:         [bold cyan]{interviews}[/bold cyan] ({interview_rate:.1f}%)\n" f"Offers:             [bold green]{offers}[/bold green] ({offer_rate:.1f}% of interviews)\n" f"Accepted:           [bold gold1]{accepted}[/bold gold1] ({success_rate:.1f}% total success)"
+    funnel_text = f"Total Applications: [bold]{total_count}[/bold]\n" f"Awaiting:           [bold yellow]{awaiting}[/bold yellow] ({awaiting_rate:.1f}%)\n" f"Ghosted:            [bold grey53]{ghosted}[/bold grey53] ({ghosted_rate:.1f}%)\n" f"Rejections:         [bold red]{rejections}[/bold red] ({rejection_rate:.1f}%)\n" f"Interviews:         [bold cyan]{interviews}[/bold cyan] ({interview_rate:.1f}%)\n" f"Offers:             [bold green]{offers}[/bold green] ({offer_rate:.1f}% of interviews)\n" f"Accepted:           [bold gold1]{accepted}[/bold gold1] ({success_rate:.1f}% total success)"
 
     # Performance Panel
     perf_text = f"Avg Job Rating:     [bold]{avg_rating:.1f}/5.0[/bold]\n" f"Avg Job Fit:        [bold]{avg_fit:.1f}/5.0[/bold]\n" f"Avg Response Time:  [bold]{f'{avg_response_time:.1f} days' if avg_response_time is not None else 'N/A'}[/bold]\n" f"Avg Time to Int:    [bold]{f'{avg_interview_time:.1f} days' if avg_interview_time is not None else 'N/A'}[/bold]"
