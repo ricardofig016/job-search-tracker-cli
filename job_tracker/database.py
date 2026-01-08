@@ -200,7 +200,7 @@ def update_ghosted_jobs():
         conn.commit()
 
 
-def get_jobs(where_clause: str = None, params: list = None, sort_clause: str = None):
+def get_jobs(where_clause: str = None, params: list = None, sort_clause: str = None, limit: int = None):
     """Retrieves jobs with dynamic filtering and sorting."""
     query = "SELECT * FROM jobs"
 
@@ -212,6 +212,9 @@ def get_jobs(where_clause: str = None, params: list = None, sort_clause: str = N
     else:
         # Default sort by date applied descending, then id descending
         query += " ORDER BY date_applied DESC, id DESC"
+
+    if limit is not None:
+        query += f" LIMIT {limit}"
 
     with get_db() as conn:
         return [dict(row) for row in conn.execute(query, params or []).fetchall()]

@@ -16,6 +16,7 @@ def view(
     show: Optional[str] = typer.Option(None, "--show", help="Comma-separated list of columns to show"),
     hide: Optional[str] = typer.Option(None, "--hide", help="Comma-separated list of columns to hide"),
     all: bool = typer.Option(False, "--all", help="Show all columns"),
+    limit: Optional[int] = typer.Option(None, "--limit", "-l", help="Maximum number of results to display"),
     export: bool = typer.Option(False, "--export", "-e", help="Export results to a CSV file"),
     output: str = typer.Option("output.csv", "--output", "-o", help="Filename for the exported CSV"),
 ):
@@ -37,7 +38,7 @@ def view(
 
     # 3. Fetch data
     try:
-        jobs = get_jobs(where_clause=where_clause, params=params, sort_clause=sort_clause)
+        jobs = get_jobs(where_clause=where_clause, params=params, sort_clause=sort_clause, limit=limit)
     except Exception as e:
         console.print(f"[bold red]Error fetching jobs:[/bold red] {e}")
         raise typer.Exit(code=1)
