@@ -1,5 +1,5 @@
 import typer
-from job_tracker.database import initialize_db
+from job_tracker.database import initialize_db, update_ghosted_jobs
 from job_tracker.commands import add, edit, view, delete, stats, config
 
 app = typer.Typer(
@@ -24,6 +24,7 @@ def main():
     Initialize the application.
     """
     initialize_db()
+    update_ghosted_jobs()
 
 
 if __name__ == "__main__":

@@ -185,6 +185,19 @@ def update_job(job_id: int, updates: dict):
         conn.commit()
 
 
+def update_ghosted_jobs():
+    """Updates status to 'ghosted' for jobs applied > 30 days ago with status 'applied'."""
+    query = """
+    UPDATE jobs 
+    SET status = 'ghosted' 
+    WHERE status = 'applied' 
+    AND date_applied <= date('now', '-30 days')
+    """
+    with get_db() as conn:
+        conn.execute(query)
+        conn.commit()
+
+
 def get_jobs(where_clause: str = None, params: list = None, sort_clause: str = None):
     """Retrieves jobs with dynamic filtering and sorting."""
     query = "SELECT * FROM jobs"

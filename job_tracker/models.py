@@ -39,3 +39,4 @@ class Status(str, Enum):
     ACCEPTED = "accepted"
     INTERVIEWING = "interviewing"
     OFFERED = "offered"
+    GHOSTED = "ghosted"
