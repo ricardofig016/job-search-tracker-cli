@@ -13,6 +13,9 @@ def format_event_body(job_data: dict, action_type: str):
     title = f"JOB TRACKER - {action_type.capitalize()} with {company} for {role}"
 
     description_parts = []
+    if job_data.get("id"):
+        description_parts.append(f"Job ID: {job_data['id']}")
+
     if job_data.get("role_url"):
         description_parts.append(f"Job Posting: {job_data['role_url']}")
 

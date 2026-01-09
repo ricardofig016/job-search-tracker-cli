@@ -193,6 +193,7 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
 
         calendar_updates = {}
         if final_data.get("interview_time"):
+            final_data["id"] = job_id
             console.print("[dim]Syncing interview with Google Calendar...[/dim]")
             i_id = sync_event(final_data, "interview")
             if i_id:
