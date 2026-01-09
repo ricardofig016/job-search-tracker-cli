@@ -26,8 +26,15 @@ def get_calendar_service():
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
+            from google.auth.exceptions import RefreshError
+
+            try:
+                creds.refresh(Request())
+            except RefreshError:
+                print("Google Calendar token expired or revoked. Re-authenticating...")
+                creds = None
+
+        if not creds or not creds.valid:
             if not os.path.exists(credentials_path):
                 raise FileNotFoundError(f"Credentials file not found at {credentials_path}. " "Please follow the setup instructions in plan.md.")
             flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
