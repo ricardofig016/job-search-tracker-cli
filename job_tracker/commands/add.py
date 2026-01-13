@@ -1,6 +1,6 @@
 import typer
 import click
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from rich.console import Console
 from job_tracker.database import add_job, update_job, get_job_by_url
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
@@ -145,6 +145,24 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             break
         console.print("[bold red]Error:[/bold red] Invalid format. Please use YYYY-MM-DD HH:MM.")
 
+    while True:
+        default_fup = ""
+        if job_data.get("interview_time"):
+            try:
+                int_dt = datetime.strptime(job_data["interview_time"], "%Y-%m-%d %H:%M")
+                default_fup = (int_dt + timedelta(days=7)).strftime("%Y-%m-%d")
+            except ValueError:
+                pass
+        
+        followup_date = typer.prompt("Followup Date (YYYY-MM-DD)", default=default_fup)
+        if is_null_string(followup_date):
+            job_data["followup_date"] = None
+            break
+        if validate_date(followup_date):
+            job_data["followup_date"] = followup_date
+            break
+        console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
+
     job_data["interview_type"] = typer.prompt("Interview Type", default="")
     job_data["interview_link"] = typer.prompt("Interview Link (Meeting URL)", default="")
     job_data["offer"] = typer.prompt("Offer Details", default="")
@@ -192,12 +210,36 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
         from job_tracker.calendar_utils import sync_event
 
         calendar_updates = {}
+        final_data["id"] = job_id  # Ensure ID is available for sync
+
+        # 1. Sync Interview
         if final_data.get("interview_time"):
-            final_data["id"] = job_id
             console.print("[dim]Syncing interview with Google Calendar...[/dim]")
             i_id = sync_event(final_data, "interview")
             if i_id:
                 calendar_updates["interview_event_id"] = i_id
+
+        # 2. Sync Follow-up (Only if Interviewing)
+        if final_data.get("status") == Status.INTERVIEWING.value:
+            if not final_data.get("followup_date"):
+                # Default: Interview + 7 days
+                base_dt = None
+                if final_data.get("interview_time"):
+                    try:
+                        base_dt = datetime.strptime(final_data["interview_time"], "%Y-%m-%d %H:%M")
+                    except ValueError:
+                        base_dt = datetime.now()
+                else:
+                    base_dt = datetime.now()
+
+                f_date = (base_dt + timedelta(days=7)).strftime("%Y-%m-%d")
+                calendar_updates["followup_date"] = f_date
+                final_data["followup_date"] = f_date
+
+            console.print("[dim]Syncing follow-up with Google Calendar...[/dim]")
+            f_id = sync_event(final_data, "followup")
+            if f_id:
+                calendar_updates["followup_event_id"] = f_id
 
         if calendar_updates:
             update_job(job_id, calendar_updates)

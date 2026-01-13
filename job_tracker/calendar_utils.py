@@ -5,7 +5,7 @@ from job_tracker.calendar_auth import get_calendar_service
 def format_event_body(job_data: dict, action_type: str):
     """
     Formats the Google Calendar event body based on job data and action type.
-    action_type: 'interview'
+    action_type: 'interview' or 'followup'
     """
     company = (job_data.get("company_name") or "Unknown Company").upper()
     role = (job_data.get("role_name") or "Unknown Role").upper()
@@ -42,15 +42,25 @@ def format_event_body(job_data: dict, action_type: str):
     description = "\n".join(description_parts)
 
     # Time handling
-    # Interview time (YYYY-MM-DD HH:MM)
-    dt_str = job_data.get("interview_time")
-    if not dt_str:
-        return None
-    # Convert YYYY-MM-DD HH:MM to ISO format YYYY-MM-DDTHH:MM:SSZ
-    # Assuming input is already in WET/UTC
-    dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
-    start_time = dt.strftime("%Y-%m-%dT%H:%M:00Z")
-    end_time = (dt + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:00Z")
+    if action_type == "interview":
+        # Interview time (YYYY-MM-DD HH:MM)
+        dt_str = job_data.get("interview_time")
+        if not dt_str:
+            return None
+        # Convert YYYY-MM-DD HH:MM to ISO format YYYY-MM-DDTHH:MM:SSZ
+        # Assuming input is already in WET/UTC
+        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+        start_time = dt.strftime("%Y-%m-%dT%H:%M:00Z")
+        end_time = (dt + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:00Z")
+    else:  # followup
+        # Followup date (YYYY-MM-DD)
+        date_str = job_data.get("followup_date")
+        if not date_str:
+            return None
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        # Set followup to 9 AM
+        start_time = dt.replace(hour=9).strftime("%Y-%m-%dT%H:%M:00Z")
+        end_time = dt.replace(hour=10).strftime("%Y-%m-%dT%H:%M:00Z")
 
     return {
         "summary": title,
@@ -72,7 +82,9 @@ def sync_event(job_data: dict, action_type: str):
         if not event_body:
             return None
 
-        event_id = job_data.get("interview_event_id")
+        # Determine which event ID to use
+        event_id_key = "interview_event_id" if action_type == "interview" else "followup_event_id"
+        event_id = job_data.get(event_id_key)
 
         if event_id:
             try:
@@ -89,7 +101,7 @@ def sync_event(job_data: dict, action_type: str):
             return event["id"]
 
     except Exception as e:
-        print(f"Error syncing with Google Calendar: {e}")
+        print(f"Error syncing {action_type} with Google Calendar: {e}")
         return None
 
 

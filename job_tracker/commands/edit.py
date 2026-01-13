@@ -1,6 +1,6 @@
 import typer
 import click
-from datetime import date
+from datetime import date, datetime, timedelta
 from rich.console import Console
 from rich.table import Table
 from job_tracker.database import get_job_by_id, update_job
@@ -29,7 +29,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
     # Map fields to their respective Enum classes for validation
     enum_fields = {"arrangement": Arrangement, "type": JobType, "level": ExperienceLevel, "source": Source, "status": Status}
 
-    date_fields = ["date_posted", "date_applied", "application_response_date", "interview_response_date"]
+    date_fields = ["date_posted", "date_applied", "application_response_date", "interview_response_date", "followup_date"]
     datetime_fields = ["interview_time"]
 
     while True:
@@ -43,7 +43,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
             is_updated = field in updates
             current_val = updates.get(field, job[field])
             val_str = str(current_val) if current_val is not None else ""
-            
+
             # Truncate long values for display
             if len(val_str) > 50:
                 val_str = val_str[:47] + "..."
@@ -89,8 +89,15 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
         elif field_to_edit in date_fields:
             while True:
                 default_val = str(job[field_to_edit]) if job[field_to_edit] is not None else ""
-                if field_to_edit in ["application_response_date", "interview_response_date"] and not default_val:
-                    default_val = date.today().isoformat()
+                if not default_val:
+                    if field_to_edit == "followup_date" and job.get("interview_time"):
+                        try:
+                            int_dt = datetime.strptime(job["interview_time"], "%Y-%m-%d %H:%M")
+                            default_val = (int_dt + timedelta(days=7)).strftime("%Y-%m-%d")
+                        except ValueError:
+                            default_val = (date.today() + timedelta(days=7)).isoformat()
+                    elif field_to_edit in ["application_response_date", "interview_response_date", "followup_date"]:
+                        default_val = date.today().isoformat()
 
                 new_value = typer.prompt(f"Enter new value for {field_to_edit} (YYYY-MM-DD)", default=default_val)
                 if is_null_string(new_value):
@@ -134,8 +141,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
             console.print(f"[bold green]Success![/bold green] Job {job_id} updated.")
 
             # Check if we need to sync with Google Calendar
-            # Relevant fields: interview_time, interview_link, company_name, role_name, etc.
-            calendar_trigger_fields = ["interview_time", "interview_link", "interview_type", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "notes"]
+            calendar_trigger_fields = ["interview_time", "interview_link", "interview_type", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "notes", "status", "followup_date"]
 
             if any(field in updates for field in calendar_trigger_fields):
                 # Fetch the full updated job data to sync
@@ -144,16 +150,43 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
                 updated_job = get_job_by_id(job_id)
                 calendar_updates = {}
 
+                # 1. Interview Event Sync
                 if updated_job.get("interview_time"):
                     console.print("[dim]Updating interview on Google Calendar...[/dim]")
                     i_id = sync_event(updated_job, "interview")
                     if i_id:
                         calendar_updates["interview_event_id"] = i_id
                 elif job.get("interview_event_id"):
-                    # If interview_time was cleared but an event existed, delete it
                     console.print("[dim]Removing interview from Google Calendar...[/dim]")
                     delete_event(job["interview_event_id"])
                     calendar_updates["interview_event_id"] = None
+
+                # 2. Follow-up Event Sync (Directly linked to Interviewing status)
+                if updated_job.get("status") == Status.INTERVIEWING.value:
+                    # Default follow-up: Interview + 7 days, or Today + 7 days
+                    if not updated_job.get("followup_date"):
+                        base_dt = None
+                        if updated_job.get("interview_time"):
+                            try:
+                                base_dt = datetime.strptime(updated_job["interview_time"], "%Y-%m-%d %H:%M")
+                            except ValueError:
+                                base_dt = datetime.now()
+                        else:
+                            base_dt = datetime.now()
+
+                        f_date = (base_dt + timedelta(days=7)).strftime("%Y-%m-%d")
+                        calendar_updates["followup_date"] = f_date
+                        updated_job["followup_date"] = f_date
+
+                    console.print("[dim]Updating follow-up on Google Calendar...[/dim]")
+                    f_id = sync_event(updated_job, "followup")
+                    if f_id:
+                        calendar_updates["followup_event_id"] = f_id
+                elif job.get("followup_event_id"):
+                    # If no longer interviewing, remove the followup event
+                    console.print("[dim]Removing follow-up from Google Calendar...[/dim]")
+                    delete_event(job["followup_event_id"])
+                    calendar_updates["followup_event_id"] = None
 
                 if calendar_updates:
                     update_job(job_id, calendar_updates)

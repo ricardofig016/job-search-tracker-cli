@@ -85,6 +85,8 @@ COLUMN_MAPPING = {
     "interview_type": "interview_type",
     "interview_link": "interview_link",
     "interview_event_id": "interview_event_id",
+    "followup": "followup_date",
+    "followup_event_id": "followup_event_id",
     "offer": "offer",
     "rating": "rating",
     "fit": "fit",
