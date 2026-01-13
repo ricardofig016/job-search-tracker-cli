@@ -79,6 +79,10 @@ def view(
             val = job.get(COLUMN_MAPPING[key])
             display_val = str(val) if val is not None else ""
 
+            # Truncate long values (like transcripts) in the table
+            if len(display_val) > 100:
+                display_val = display_val[:97] + "..."
+
             # Add clickable links for company and role if URLs exist
             if key == "company":
                 link_url = job.get("company_url") or job.get("company_linkedin")

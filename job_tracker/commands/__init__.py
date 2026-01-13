@@ -1,1 +1,1 @@
-from . import add, edit, view, delete, stats, config
+from . import add, edit, view, delete, stats, config, transcript

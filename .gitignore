@@ -19,3 +19,5 @@ env/
 # Google API
 credentials.json
 token.json
+
+transcript.txt

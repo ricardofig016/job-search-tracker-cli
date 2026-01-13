@@ -89,6 +89,7 @@ COLUMN_MAPPING = {
     "rating": "rating",
     "fit": "fit",
     "feedback": "feedback",
+    "transcript": "transcript",
     "method": "application_method",
 }
 

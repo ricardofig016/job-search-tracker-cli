@@ -43,6 +43,10 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
             is_updated = field in updates
             current_val = updates.get(field, job[field])
             val_str = str(current_val) if current_val is not None else ""
+            
+            # Truncate long values for display
+            if len(val_str) > 50:
+                val_str = val_str[:47] + "..."
 
             if is_updated:
                 table.add_row(str(i), field, f"[bold green]{val_str}[/bold green]")
