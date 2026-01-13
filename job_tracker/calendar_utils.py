@@ -10,7 +10,7 @@ def format_event_body(job_data: dict, action_type: str):
     company = (job_data.get("company_name") or "Unknown Company").upper()
     role = (job_data.get("role_name") or "Unknown Role").upper()
 
-    title = f"JOB TRACKER - {action_type.capitalize()} with {company} for {role}"
+    title = f"{action_type.capitalize()} with {company} for {role} - Job Tracker"
 
     description_parts = []
     if job_data.get("id"):
