@@ -26,6 +26,8 @@ def format_event_body(job_data: dict, action_type: str):
         recruiter_info.append(job_data["recruiter_email"])
     if job_data.get("recruiter_linkedin"):
         recruiter_info.append(job_data["recruiter_linkedin"])
+    if job_data.get("recruiter_phone_number"):
+        recruiter_info.append(job_data["recruiter_phone_number"])
 
     if recruiter_info:
         description_parts.append(f"Recruiter: {', '.join(recruiter_info)}")

@@ -86,6 +86,7 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
     job_data["recruiter_name"] = typer.prompt("Recruiter Name", default=scraped_data.get("recruiter_name") or "")
     job_data["recruiter_email"] = typer.prompt("Recruiter Email", default=scraped_data.get("recruiter_email") or "")
     job_data["recruiter_linkedin"] = typer.prompt("Recruiter LinkedIn URL", default=scraped_data.get("recruiter_linkedin") or "")
+    job_data["recruiter_phone_number"] = typer.prompt("Recruiter Phone Number", default=scraped_data.get("recruiter_phone_number") or "")
 
     # Compensation & Notes
     job_data["expected_salary"] = typer.prompt("Expected Salary", default=scraped_data.get("expected_salary") or "")

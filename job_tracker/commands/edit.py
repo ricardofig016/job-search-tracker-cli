@@ -144,7 +144,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
             console.print(f"[bold green]Success![/bold green] Job {job_id} updated.")
 
             # Check if we need to sync with Google Calendar
-            calendar_trigger_fields = ["interview_time", "interview_link", "interview_type", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "notes", "status", "followup_date"]
+            calendar_trigger_fields = ["interview_time", "interview_link", "interview_type", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "recruiter_phone_number", "notes", "status", "followup_date"]
 
             if any(field in updates for field in calendar_trigger_fields):
                 # Fetch the full updated job data to sync
