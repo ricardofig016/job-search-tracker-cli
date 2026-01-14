@@ -1,38 +1,43 @@
 # Job Search Tracker CLI - AI Coding Instructions
 
-## Architecture Overview
+## Architecture & Data Flow
 
-- **CLI Framework**: Built with [Typer](https://typer.tiangolo.com/). Commands are modularized in [job_tracker/commands/](job_tracker/commands/) and registered in [job_tracker/main.py](job_tracker/main.py).
-- **Database**: SQLite (raw SQL via `sqlite3`, no ORM). Connection managed by `get_db()` context manager in [job_tracker/database.py](job_tracker/database.py).
-- **UI/Formatting**: [Rich](https://rich.readthedocs.io/) for tables, panels, and colored output.
-- **Interactivity**: Intensive use of `typer.prompt`. [scripts/bulk_add.py](scripts/bulk_add.py) pipes newlines to bypass prompts by accepting defaults.
-- **Enrichment**:
-  - [job_tracker/scraper.py](job_tracker/scraper.py) parses LinkedIn HTML using `BeautifulSoup`.
-  - [job_tracker/llm.py](job_tracker/llm.py) uses OpenAI to extract metadata and analyze fit based on [user_profile.md](user_profile.md).
+- **CLI Framework**: [Typer](https://typer.tiangolo.com/) powered commands in `job_tracker/commands/`. Subcommands (like `config`) use `app.add_typer`.
+- **Database**: SQLite (raw `sqlite3`). Use the `get_db()` context manager in [job_tracker/database.py](job_tracker/database.py) for all connections.
+- **Maintenance**: `main.py` triggers `initialize_db()` and `update_ghosted_jobs()` (which marks applications >30 days old as ghosted) on every run.
+- **Mapping Layer**: Always use `COLUMN_MAPPING` in [job_tracker/utils.py](job_tracker/utils.py) to translate between CLI aliases (e.g., `company`) and SQL columns (e.g., `company_name`).
 
-## Key Patterns & Conventions
+## UI & Interactivity Patterns
 
-- **CLI-to-DB Field Mapping**: Always use `COLUMN_MAPPING` in [job_tracker/utils.py](job_tracker/utils.py) to bridge CLI aliases (e.g., `company`) to SQL columns (e.g., `company_name`).
-- **Database Schema**:
-  - Manage schema changes in `initialize_db()` and `run_migrations()` in [job_tracker/database.py](job_tracker/database.py).
-  - Use `add_new_column()` for dynamic updates.
-- **Nullable Inputs**: Use `NULL_STRINGS` ("-", "none", "null") and `is_null_string()` from [job_tracker/utils.py](job_tracker/utils.py) to permit clearing fields during prompts.
-- **Data Integrity**:
-  - Use Enums from [job_tracker/models.py](job_tracker/models.py) with `NullableChoice` for validated CLI inputs.
-  - Custom logic for `view` filters (e.g., `col~val`, `col:[min-max]`, `AND/OR`) is in `parse_filter_string` in [job_tracker/utils.py](job_tracker/utils.py).
+- **Rich Terminal UI**:
+  - Use `[link=URL]Text[/link]` for clickable links in tables ([view.py](job_tracker/commands/view.py)).
+  - Truncate long strings (like `notes` or `transcript`) to ~100 chars in table views.
+  - Use `on grey7` row styles and colored status panels in `stats`.
+- **Interactivity**:
+  - Intensive use of `typer.prompt()` for interactive workflows.
+  - **Nullable Support**: Use `NULL_STRINGS` ("-", "none", "null") and `is_null_string()` to allow users to intentionally clear database fields.
+  - **Lazy Imports**: Import expensive modules (`scraper`, `llm`, `calendar_utils`) inside command functions to keep CLI startup fast.
 
-## Developer Workflows
+## Data & Logic Conventions
 
-- **Running local dev**: `python -m job_tracker.main [COMMAND]`.
-- **Adding a Command**: Create a new module in `job_tracker/commands/` and register it in [job_tracker/main.py](job_tracker/main.py).
-- **Extending Schema**:
-  1. Add column to `CREATE TABLE` in `initialize_db()`.
-  2. Add migration check in `run_migrations()`.
-  3. Update `COLUMN_MAPPING` in [job_tracker/utils.py](job_tracker/utils.py).
-- **Modifying Scraper**: Sensitive to LinkedIn HTML structure changes (e.g., `topcard__org-name-link`).
+- **Filtering/Sorting**: Logic for `view` and `stats` is in `parse_filter_string` and `parse_sort_string` ([utils.py](job_tracker/utils.py)). Supports `col~val` (LIKE), `col:[min-max]` (Range), and `AND/OR` logic.
+- **Date/Time Management**:
+  - Date Format: `YYYY-MM-DD`.
+  - DateTime Format: `YYYY-MM-DD HH:MM`.
+  - Always use `_parse_dt` helper in [stats.py](job_tracker/commands/stats.py) for ISO/manual format conversion.
+- **State Triggers**:
+  - Moving to `interviewing` status automatically triggers followup date generation (Interview + 7 days).
+  - Updating "trigger fields" (e.g., `interview_time`, `status`) in [edit.py](job_tracker/commands/edit.py) automatically initiates a Google Calendar sync.
 
-## Integration Details
+## External Integrations
 
-- **OpenAI**: Requires `OPENAI_API_KEY` in `.env`. The LLM returns structured JSON via `enrich_job_data`.
-- **Google Calendar**: Events identified by `interview_event_id` in DB. Requires `credentials.json` and `token.json`. Sync logic in [job_tracker/calendar_utils.py](job_tracker/calendar_utils.py).
-- **User Personalization**: [user_profile.md](user_profile.md) is the source of truth for "fit" and "rating" analysis.
+- **Scraper**: [scraper.py](job_tracker/scraper.py) uses `BeautifulSoup` with multiple fallback selectors (e.g., checking both `top-card-layout__title` and `sub-nav-cta__header` for job titles).
+- **LLM**: [llm.py](job_tracker/llm.py) uses `gpt-5-nano` with `strict: True` JSON schema.
+- **Google Calendar**:
+  - Linked via `interview_event_id` and `followup_event_id`.
+  - `sync_event()` handles both creation and updates (via `.update()` or `.insert()` fallback).
+
+## Metrics Definitions
+
+- **Settled Applications**: For conversion rates, "settled" means terminal states (Ghosted, Rejected, Offered) or defined outcomes, excluding "Awaiting" or "Currently Interviewing" states.
+- **Calculated Funnel**: Analytics distinguish between `rejections_pre_interview` and `rejections_post_interview`.
