@@ -53,7 +53,7 @@ def initialize_db():
         rating INTEGER,
         fit INTEGER,
         feedback TEXT,
-        transcript TEXT,
+        interview_transcript TEXT,
         application_method TEXT,
         followup_date DATE,
         calendar_event_id TEXT,
@@ -141,10 +141,18 @@ def run_migrations():
             except sqlite3.OperationalError:
                 pass
 
-        # Add transcript if it doesn't exist
-        if "transcript" not in columns:
+        # Check if transcript exists and rename it to interview_transcript
+        if "transcript" in columns and "interview_transcript" not in columns:
             try:
-                conn.execute("ALTER TABLE jobs ADD COLUMN transcript TEXT")
+                conn.execute("ALTER TABLE jobs RENAME COLUMN transcript TO interview_transcript")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add interview_transcript if it doesn't exist
+        if "interview_transcript" not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN interview_transcript TEXT")
                 conn.commit()
             except sqlite3.OperationalError:
                 pass

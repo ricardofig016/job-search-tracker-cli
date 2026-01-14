@@ -11,7 +11,7 @@
 
 - **Rich Terminal UI**:
   - Use `[link=URL]Text[/link]` for clickable links in tables ([view.py](job_tracker/commands/view.py)).
-  - Truncate long strings (like `notes` or `transcript`) to ~100 chars in table views.
+  - Truncate long strings (like `notes` or `interview_transcript`) to ~100 chars in table views.
   - Use `on grey7` row styles and colored status panels in `stats`.
 - **Interactivity**:
   - Intensive use of `typer.prompt()` for interactive workflows.

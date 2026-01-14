@@ -79,7 +79,7 @@ def view(
             val = job.get(COLUMN_MAPPING[key])
             display_val = str(val) if val is not None else ""
 
-            # Truncate long values (like transcripts) in the table
+            # Truncate long values (like interview transcripts) in the table
             if len(display_val) > 100:
                 display_val = display_val[:97] + "..."
 
