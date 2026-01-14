@@ -38,6 +38,9 @@ def format_event_body(job_data: dict, action_type: str):
     if job_data.get("interview_type"):
         description_parts.append(f"Interview Type: {job_data['interview_type']}")
 
+    if job_data.get("interview_round"):
+        description_parts.append(f"Interview Round: {job_data['interview_round']}")
+
     if job_data.get("notes"):
         description_parts.append(f"Notes: {job_data['notes']}")
 

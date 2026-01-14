@@ -134,6 +134,22 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
                     console.print("[bold red]Error:[/bold red] Value must be between 1 and 5.")
                 except ValueError:
                     console.print("[bold red]Error:[/bold red] Value must be an integer.")
+        elif field_to_edit == "interview_round":
+            while True:
+                # Default to 1 if not set
+                default_val = str(job[field_to_edit]) if job[field_to_edit] is not None else "1"
+                new_value = typer.prompt(f"Enter new value for {field_to_edit} (e.g., 1, 2, 3)", default=default_val)
+                if is_null_string(new_value):
+                    updates[field_to_edit] = None
+                    break
+                try:
+                    val = int(new_value)
+                    if val >= 0:
+                        updates[field_to_edit] = val
+                        break
+                    console.print("[bold red]Error:[/bold red] Value must be a positive integer.")
+                except ValueError:
+                    console.print("[bold red]Error:[/bold red] Value must be an integer.")
         else:
             new_value = typer.prompt(f"Enter new value for {field_to_edit}", default=str(job[field_to_edit]) if job[field_to_edit] is not None else "")
             updates[field_to_edit] = None if is_null_string(new_value) else new_value
@@ -144,7 +160,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
             console.print(f"[bold green]Success![/bold green] Job {job_id} updated.")
 
             # Check if we need to sync with Google Calendar
-            calendar_trigger_fields = ["interview_time", "interview_link", "interview_type", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "recruiter_phone_number", "notes", "status", "followup_date"]
+            calendar_trigger_fields = ["interview_time", "interview_link", "interview_type", "interview_round", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "recruiter_phone_number", "notes", "status", "followup_date"]
 
             if any(field in updates for field in calendar_trigger_fields):
                 # Fetch the full updated job data to sync
