@@ -102,6 +102,53 @@ COLUMN_MAPPING = {
 }
 
 
+# Canonical order for columns in the edit table.
+# CRITICAL: Update this list whenever adding new columns to the 'jobs' table in database.py
+EDIT_COLUMN_ORDER = [
+    # Core Job Info
+    "company_name",
+    "company_url",
+    "company_linkedin",
+    "role_name",
+    "role_url",
+    "location",
+    "arrangement",
+    "type",
+    "level",
+    # Application Details
+    "status",
+    "date_posted",
+    "date_applied",
+    "application_method",
+    "application_response_date",
+    "source",
+    "expected_salary",
+    # Recruiter Info
+    "recruiter_name",
+    "recruiter_email",
+    "recruiter_linkedin",
+    "recruiter_phone_number",
+    # Interview Details
+    "interview_time",
+    "interview_round",
+    "interview_type",
+    "interview_link",
+    "interview_response_date",
+    "interview_event_id",
+    "interview_transcript",
+    # Outcome & Follow-up
+    "followup_date",
+    "followup_event_id",
+    "offer",
+    "rating",
+    "fit",
+    "feedback",
+    # Misc
+    "notes",
+    "resources",
+]
+
+
 def parse_filter_string(filter_str: str) -> Tuple[str, List[Any]]:
     """
     Parses a filter string into a SQL WHERE clause and parameters.

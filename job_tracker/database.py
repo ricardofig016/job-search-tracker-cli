@@ -22,6 +22,9 @@ def get_db():
 
 def initialize_db():
     """Creates the jobs table if it doesn't exist."""
+    # CRITICAL: When adding/removing columns here, remember to update:
+    # 1. COLUMN_MAPPING in job_tracker/utils.py
+    # 2. EDIT_COLUMN_ORDER in job_tracker/utils.py
     query = """
     CREATE TABLE IF NOT EXISTS jobs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,6 +75,7 @@ def initialize_db():
 
 def run_migrations():
     """Handles schema updates for existing databases."""
+    # CRITICAL: When adding new columns via migration, update EDIT_COLUMN_ORDER in utils.py
     with get_db() as conn:
         # Check if interview_date exists and rename it to interview_time
         cursor = conn.execute("PRAGMA table_info(jobs)")

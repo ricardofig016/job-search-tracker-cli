@@ -5,7 +5,7 @@ from rich.console import Console
 from rich.table import Table
 from job_tracker.database import get_job_by_id, update_job
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
-from job_tracker.utils import validate_date, validate_datetime, is_null_string, NullableChoice, COLUMN_MAPPING
+from job_tracker.utils import validate_date, validate_datetime, is_null_string, NullableChoice, COLUMN_MAPPING, EDIT_COLUMN_ORDER
 
 console = Console()
 
@@ -23,8 +23,11 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
 
     updates = {}
 
-    # List of editable fields (excluding ID)
-    fields = [k for k in job.keys() if k != "id"]
+    # List of editable fields in canonical order (excluding ID)
+    all_db_fields = [k for k in job.keys() if k != "id"]
+    fields = [f for f in EDIT_COLUMN_ORDER if f in all_db_fields]
+    # Add any database fields that might be missing from the canonical order
+    fields += [f for f in all_db_fields if f not in fields]
 
     # Map fields to their respective Enum classes for validation
     enum_fields = {"arrangement": Arrangement, "type": JobType, "level": ExperienceLevel, "source": Source, "status": Status}
