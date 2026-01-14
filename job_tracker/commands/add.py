@@ -1,5 +1,4 @@
 import typer
-import click
 from datetime import date, datetime, timedelta
 from rich.console import Console
 from job_tracker.database import add_job, update_job, get_job_by_url
@@ -154,7 +153,7 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
                 default_fup = (int_dt + timedelta(days=7)).strftime("%Y-%m-%d")
             except ValueError:
                 pass
-        
+
         followup_date = typer.prompt("Followup Date (YYYY-MM-DD)", default=default_fup)
         if is_null_string(followup_date):
             job_data["followup_date"] = None

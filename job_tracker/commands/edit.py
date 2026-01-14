@@ -1,5 +1,4 @@
 import typer
-import click
 from datetime import date, datetime, timedelta
 from rich.console import Console
 from rich.table import Table

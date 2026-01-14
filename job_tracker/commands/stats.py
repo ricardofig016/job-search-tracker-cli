@@ -6,7 +6,6 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.columns import Columns
-from rich.layout import Layout
 from rich import box
 from job_tracker.database import get_jobs
 from job_tracker.utils import parse_filter_string

@@ -1,5 +1,4 @@
 import sqlite3
-import os
 from pathlib import Path
 from contextlib import contextmanager
 

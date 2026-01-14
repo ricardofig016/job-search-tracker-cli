@@ -1,6 +1,6 @@
 import re
 import click
-from typing import List, Tuple, Any, Dict
+from typing import List, Tuple, Any
 
 from datetime import date
 

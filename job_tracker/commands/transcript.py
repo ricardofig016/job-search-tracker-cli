@@ -1,7 +1,6 @@
 import typer
 from rich.console import Console
 from job_tracker.database import get_job_by_id, update_job
-from job_tracker.utils import is_null_string
 from pathlib import Path
 
 console = Console()

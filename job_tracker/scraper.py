@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-import re
 
 
 def fetch_job_page(url: str) -> str:
