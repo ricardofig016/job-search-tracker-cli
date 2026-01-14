@@ -3,18 +3,19 @@
 ## Architecture & Data Flow
 
 - **CLI Framework**: [Typer](https://typer.tiangolo.com/) powered commands in `job_tracker/commands/`. Subcommands (like `config`) use `app.add_typer`.
-- **Database**: SQLite (raw `sqlite3`). Use the `get_db()` context manager in [job_tracker/database.py](job_tracker/database.py) for all connections.
+- **Database**: SQLite (raw `sqlite3`). Use the `get_db()` context manager in [job_tracker/database.py](job_tracker/database.py) for all connections. It uses `sqlite3.Row` for dict-like access.
 - **Maintenance**: `main.py` triggers `initialize_db()` and `update_ghosted_jobs()` (which marks applications >30 days old as ghosted) on every run.
 - **Mapping Layer**: Always use `COLUMN_MAPPING` in [job_tracker/utils.py](job_tracker/utils.py) to translate between CLI aliases (e.g., `company`) and SQL columns (e.g., `company_name`).
+- **Schema Management**: Dynamic column addition is handled via `add_new_column` in `database.py`. New columns **MUST** be added to `COLUMN_MAPPING` and `EDIT_COLUMN_ORDER` in [job_tracker/utils.py](job_tracker/utils.py).
 
 ## UI & Interactivity Patterns
 
 - **Rich Terminal UI**:
   - Use `[link=URL]Text[/link]` for clickable links in tables ([view.py](job_tracker/commands/view.py)).
   - Truncate long strings (like `notes` or `interview_transcript`) to ~100 chars in table views.
-  - Use `on grey7` row styles and colored status panels in `stats`.
+  - Use `on grey7` row styles for readability.
 - **Interactivity**:
-  - Intensive use of `typer.prompt()` for interactive workflows.
+  - Intensive use of `typer.prompt()` for interactive workflows in [add.py](job_tracker/commands/add.py) and [edit.py](job_tracker/commands/edit.py).
   - **Nullable Support**: Use `NULL_STRINGS` ("-", "none", "null") and `is_null_string()` to allow users to intentionally clear database fields.
   - **Lazy Imports**: Import expensive modules (`scraper`, `llm`, `calendar_utils`) inside command functions to keep CLI startup fast.
 
@@ -24,20 +25,20 @@
 - **Date/Time Management**:
   - Date Format: `YYYY-MM-DD`.
   - DateTime Format: `YYYY-MM-DD HH:MM`.
-  - Always use `_parse_dt` helper in [stats.py](job_tracker/commands/stats.py) for ISO/manual format conversion.
+  - Validation helpers `validate_date` and `validate_datetime` are in `utils.py`.
 - **State Triggers**:
-  - Moving to `interviewing` status automatically triggers followup date generation (Interview + 7 days).
-  - Updating "trigger fields" (e.g., `interview_time`, `status`) in [edit.py](job_tracker/commands/edit.py) automatically initiates a Google Calendar sync.
+  - Updating "trigger fields" (e.g., `interview_time`, `status`) in [edit.py](job_tracker/commands/edit.py) or entering them in [add.py](job_tracker/commands/add.py) automatically initiates a Google Calendar sync via `sync_event()`.
+  - Setting status to `interviewing` defaults a followup date to (Today/Interview + 7 days).
 
 ## External Integrations
 
-- **Scraper**: [scraper.py](job_tracker/scraper.py) uses `BeautifulSoup` with multiple fallback selectors (e.g., checking both `top-card-layout__title` and `sub-nav-cta__header` for job titles).
-- **LLM**: [llm.py](job_tracker/llm.py) uses `gpt-5-nano` with `strict: True` JSON schema.
+- **Scraper**: [scraper.py](job_tracker/scraper.py) uses `BeautifulSoup` with multiple fallback selectors for extracting job details.
+- **LLM**: [llm.py](job_tracker/llm.py) enriches data using `gpt-5-nano`. It requires `user_profile.md` for context.
 - **Google Calendar**:
-  - Linked via `interview_event_id` and `followup_event_id`.
-  - `sync_event()` handles both creation and updates (via `.update()` or `.insert()` fallback).
+  - Events are linked via `interview_event_id` and `followup_event_id` columns.
+  - `sync_event()` handles creation/updates; `delete_event()` handles removal if fields are cleared.
 
-## Metrics Definitions
+## Metrics & Analytics
 
-- **Settled Applications**: For conversion rates, "settled" means terminal states (Ghosted, Rejected, Offered) or defined outcomes, excluding "Awaiting" or "Currently Interviewing" states.
-- **Calculated Funnel**: Analytics distinguish between `rejections_pre_interview` and `rejections_post_interview`.
+- **Stats Logic**: Funnel calculation and response time analysis reside in `job_tracker/commands/stats.py`.
+- **Settled States**: Conversion rates often exclude "Awaiting" or "Currently Interviewing" to focus on terminal outcomes (Ghosted, Rejected, Offered).
