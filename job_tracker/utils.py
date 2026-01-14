@@ -93,6 +93,11 @@ COLUMN_MAPPING = {
     "feedback": "feedback",
     "transcript": "transcript",
     "method": "application_method",
+    "recruiter_phone": "recruiter_phone_number",
+    "phone": "recruiter_phone_number",
+    "resources": "resources",
+    "round": "interview_round",
+    "interview_round": "interview_round",
 }
 
 

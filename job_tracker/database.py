@@ -57,7 +57,10 @@ def initialize_db():
         application_method TEXT,
         followup_date DATE,
         calendar_event_id TEXT,
-        followup_event_id TEXT
+        followup_event_id TEXT,
+        recruiter_phone_number TEXT,
+        resources TEXT,
+        interview_round INTEGER
     );
     """
     with get_db() as conn:
@@ -142,6 +145,30 @@ def run_migrations():
         if "transcript" not in columns:
             try:
                 conn.execute("ALTER TABLE jobs ADD COLUMN transcript TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add recruiter_phone_number if it doesn't exist
+        if "recruiter_phone_number" not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN recruiter_phone_number TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add resources if it doesn't exist
+        if "resources" not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN resources TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Add interview_round if it doesn't exist
+        if "interview_round" not in columns:
+            try:
+                conn.execute("ALTER TABLE jobs ADD COLUMN interview_round INTEGER")
                 conn.commit()
             except sqlite3.OperationalError:
                 pass
