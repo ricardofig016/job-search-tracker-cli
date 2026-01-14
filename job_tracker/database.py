@@ -56,7 +56,6 @@ def initialize_db():
         interview_transcript TEXT,
         application_method TEXT,
         followup_date DATE,
-        calendar_event_id TEXT,
         followup_event_id TEXT,
         recruiter_phone_number TEXT,
         resources TEXT,
@@ -177,6 +176,14 @@ def run_migrations():
         if "interview_round" not in columns:
             try:
                 conn.execute("ALTER TABLE jobs ADD COLUMN interview_round INTEGER")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+        # Remove calendar_event_id if it exists
+        if "calendar_event_id" in columns:
+            try:
+                conn.execute("ALTER TABLE jobs DROP COLUMN calendar_event_id")
                 conn.commit()
             except sqlite3.OperationalError:
                 pass
