@@ -6,7 +6,13 @@ from pathlib import Path
 console = Console()
 
 
-def transcript(job_id: int = typer.Argument(..., help="The ID of the job to associate the transcript with."), file: Path = typer.Option(None, "--file", "-f", help="Path to the transcript text file."), view: bool = typer.Option(False, "--view", "-v", help="View the current transcript."), clear: bool = typer.Option(False, "--clear", help="Clear the transcript.")):
+def transcript(
+    job_id: int = typer.Argument(..., help="The ID of the job to associate the transcript with."),
+    file: Path = typer.Option(None, "--file", "-f", help="Path to the transcript text file."),
+    view: bool = typer.Option(False, "--view", "-v", help="View the current transcript."),
+    copy: bool = typer.Option(False, "--copy", "-c", help="Copy the transcript to clipboard."),
+    clear: bool = typer.Option(False, "--clear", help="Clear the transcript."),
+):
     """Store or view interview transcripts for a job."""
     job = get_job_by_id(job_id)
 
@@ -29,6 +35,22 @@ def transcript(job_id: int = typer.Argument(..., help="The ID of the job to asso
             console.print("-" * 40)
             console.print(current_transcript)
             console.print("-" * 40)
+        return
+
+    if copy:
+        current_transcript = job.get("interview_transcript")
+        if not current_transcript:
+            console.print(f"[yellow]No transcript found for job {job_id} to copy.[/yellow]")
+        else:
+            try:
+                import pyperclip
+
+                pyperclip.copy(current_transcript)
+                console.print(f"[bold green]Success![/bold green] Transcript for job {job_id} copied to clipboard.")
+            except ImportError:
+                console.print("[bold red]Error:[/bold red] pyperclip module not found. Please install it using 'pip install pyperclip'.")
+            except Exception as e:
+                console.print(f"[bold red]Error copying to clipboard:[/bold red] {e}")
         return
 
     if file:
