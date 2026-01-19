@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "job-search-tracker-cli"
+version = "0.1.0"
+description = "A CLI tool to organize and track your job search"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "typer[all]",
+    "rich",
+    "google-auth-oauthlib",
+    "google-api-python-client",
+    "requests",
+    "beautifulsoup4",
+    "openai",
+    "python-dotenv",
+    "pyperclip",
+]
+
+[project.scripts]
+job-tracker = "job_tracker.main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["job_tracker*"]

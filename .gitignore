@@ -12,6 +12,9 @@ ENV/
 env/
 .env
 .venv
+*.egg-info/
+build/
+dist/
 
 # Outputs
 *.csv

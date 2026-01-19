@@ -57,11 +57,13 @@ A command-line tool designed to help you organize and track your job search. It 
    cd job-search-tracker-cli
    ```
 
-2. Install dependencies:
+2. Install the package in editable mode:
 
    ```bash
-   pip install -r requirements.txt
+   pip install -e .
    ```
+
+   This will create a `job-tracker` command that you can run from anywhere.
 
 3. Setup environment variables:
    Create a `.env` file in the root directory:
@@ -86,10 +88,10 @@ To enable interview and follow-up syncing:
 
 ## Usage
 
-The application is run as a Python module:
+Once installed, you can run the application using the `job-tracker` command:
 
 ```bash
-python -m job_tracker.main [COMMAND]
+job-tracker [COMMAND]
 ```
 
 ### Adding Jobs
@@ -97,7 +99,7 @@ python -m job_tracker.main [COMMAND]
 #### Interactive Add
 
 ```bash
-python -m job_tracker.main add
+job-tracker add
 ```
 
 Prompts you for all job details step-by-step. You can clear fields or skip optional ones by typing `null`, `none`, or `-`.
@@ -105,7 +107,7 @@ Prompts you for all job details step-by-step. You can clear fields or skip optio
 #### Automated Add (LinkedIn)
 
 ```bash
-python -m job_tracker.main add --url "https://www.linkedin.com/jobs/view/0123456789/"
+job-tracker add --url "https://www.linkedin.com/jobs/view/0123456789/"
 ```
 
 Fetches details automatically. You can still override any field during the confirmation prompts.
@@ -116,13 +118,13 @@ Display your applications in a beautifully formatted table with clickable links 
 
 ```bash
 # Basic view (last 10)
-python -m job_tracker.main view --limit 10
+job-tracker view --limit 10
 
 # Filter by company (substring search)
-python -m job_tracker.main view company~google
+job-tracker view company~google
 
 # Complex filtering with SQL-like syntax
-python -m job_tracker.main view "rating>=4 AND level:senior"
+job-tracker view "rating>=4 AND level:senior"
 ```
 
 #### Filter Syntax
@@ -137,7 +139,7 @@ python -m job_tracker.main view "rating>=4 AND level:senior"
 Multi-level sorting is supported:
 
 ```bash
-python -m job_tracker.main view --sort date:desc --sort rating:desc
+job-tracker view --sort date:desc --sort rating:desc
 ```
 
 #### Column Management
@@ -146,10 +148,10 @@ Customize which columns are displayed in the terminal:
 
 ```bash
 # Showing/Hiding specific columns
-python -m job_tracker.main view --show salary,recruiter --hide level
+job-tracker view --show salary,recruiter --hide level
 
 # Show all available database columns
-python -m job_tracker.main view --all
+job-tracker view --all
 ```
 
 #### CSV Export
@@ -157,8 +159,8 @@ python -m job_tracker.main view --all
 Export your current view (including filters and sorting) to a CSV file:
 
 ```bash
-python -m job_tracker.main view -e
-python -m job_tracker.main view --export --output my_search.csv
+job-tracker view -e
+job-tracker view --export --output my_search.csv
 ```
 
 ### Editing Jobs
@@ -166,7 +168,7 @@ python -m job_tracker.main view --export --output my_search.csv
 Update details for an existing application.
 
 ```bash
-python -m job_tracker.main edit [JOB_ID]
+job-tracker edit [JOB_ID]
 ```
 
 This opens an interactive menu where you can select fields to change. Updating interview-related fields (date, time, status) will automatically trigger a Google Calendar sync.
@@ -177,22 +179,22 @@ Store or view interview transcripts for specific applications.
 
 ```bash
 # Store a transcript from a file
-python -m job_tracker.main transcript [JOB_ID] --file path/to/transcript.txt
+job-tracker transcript [JOB_ID] --file path/to/transcript.txt
 
 # View a stored transcript
-python -m job_tracker.main transcript [JOB_ID] --view
+job-tracker transcript [JOB_ID] --view
 
 # Clear a transcript
-python -m job_tracker.main transcript [JOB_ID] --clear
+job-tracker transcript [JOB_ID] --clear
 
 # Interactive management (prompts for file path or manual pasting)
-python -m job_tracker.main transcript [JOB_ID]
+job-tracker transcript [JOB_ID]
 ```
 
 ### Deleting Jobs
 
 ```bash
-python -m job_tracker.main delete [JOB_ID]
+job-tracker delete [JOB_ID]
 ```
 
 ### Statistics & Analytics
@@ -200,10 +202,10 @@ python -m job_tracker.main delete [JOB_ID]
 View a comprehensive dashboard of your recruitment metrics.
 
 ```bash
-python -m job_tracker.main stats
+job-tracker stats
 
 # Filter stats for a specific subset
-python -m job_tracker.main stats "status==rejected"
+job-tracker stats "status==rejected"
 ```
 
 Includes:
@@ -239,7 +241,7 @@ The CLI automatically performs maintenance on every run:
 You can add custom columns to the database without manual SQL:
 
 ```bash
-python -m job_tracker.main config add-column --name "referral_name" --type "TEXT"
+job-tracker config add-column --name "referral_name" --type "TEXT"
 ```
 
 _Note: You must also add this new column to `COLUMN_MAPPING` and `EDIT_COLUMN_ORDER` in `job_tracker/utils.py` to make it visible in filters and the editor._
