@@ -4,7 +4,16 @@ from rich.console import Console
 from rich.table import Table
 from job_tracker.database import get_job_by_id, update_job
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
-from job_tracker.utils import validate_date, validate_datetime, is_null_string, NullableChoice, COLUMN_MAPPING, EDIT_COLUMN_ORDER
+from job_tracker.utils import (
+    validate_date,
+    validate_datetime,
+    is_null_string,
+    NullableChoice,
+    COLUMN_MAPPING,
+    EDIT_COLUMN_ORDER,
+    resolve_date,
+    resolve_datetime,
+)
 
 console = Console()
 
@@ -86,7 +95,9 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
         # Prompt for new value with validation
         if field_to_edit in enum_fields:
             enum_cls = enum_fields[field_to_edit]
-            new_value = typer.prompt(f"Enter new value for {field_to_edit}", default=str(job[field_to_edit]) if job[field_to_edit] is not None else "", type=NullableChoice([e.value for e in enum_cls]))
+            new_value = typer.prompt(
+                f"Enter new value for {field_to_edit}", default=str(job[field_to_edit]) if job[field_to_edit] is not None else "", type=NullableChoice([e.value for e in enum_cls])
+            )
             updates[field_to_edit] = None if is_null_string(new_value) else new_value
         elif field_to_edit in date_fields:
             while True:
@@ -106,7 +117,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
                     updates[field_to_edit] = None
                     break
                 if validate_date(new_value):
-                    updates[field_to_edit] = new_value
+                    updates[field_to_edit] = resolve_date(new_value)
                     break
                 console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
         elif field_to_edit in datetime_fields:
@@ -116,7 +127,7 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
                     updates[field_to_edit] = None
                     break
                 if validate_datetime(new_value):
-                    updates[field_to_edit] = new_value
+                    updates[field_to_edit] = resolve_datetime(new_value)
                     break
                 console.print("[bold red]Error:[/bold red] Invalid format. Please use YYYY-MM-DD HH:MM.")
         elif field_to_edit in ["rating", "fit"]:
@@ -159,7 +170,22 @@ def edit(job_id: int = typer.Argument(..., help="The ID of the job to edit.")):
             console.print(f"[bold green]Success![/bold green] Job {job_id} updated.")
 
             # Check if we need to sync with Google Calendar
-            calendar_trigger_fields = ["interview_time", "interview_link", "interview_type", "interview_round", "company_name", "role_name", "role_url", "recruiter_name", "recruiter_email", "recruiter_linkedin", "recruiter_phone_number", "notes", "status", "followup_date"]
+            calendar_trigger_fields = [
+                "interview_time",
+                "interview_link",
+                "interview_type",
+                "interview_round",
+                "company_name",
+                "role_name",
+                "role_url",
+                "recruiter_name",
+                "recruiter_email",
+                "recruiter_linkedin",
+                "recruiter_phone_number",
+                "notes",
+                "status",
+                "followup_date",
+            ]
 
             if any(field in updates for field in calendar_trigger_fields):
                 # Fetch the full updated job data to sync

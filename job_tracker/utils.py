@@ -2,7 +2,7 @@ import re
 import click
 from typing import List, Tuple, Any
 
-from datetime import date
+from datetime import date, datetime, timedelta
 
 
 NULL_STRINGS = ["-", "null", "none", "unknown", "na", "idk"]
@@ -34,8 +34,11 @@ class NullableChoice(click.Choice):
 
 
 def validate_date(date_str: str) -> bool:
-    """Validates if a string is in YYYY-MM-DD format."""
+    """Validates if a string is in YYYY-MM-DD format or relative ('today', 'yesterday')."""
     if not date_str:
+        return True
+    val = date_str.lower().strip()
+    if val in ("today", "yesterday"):
         return True
     try:
         date.fromisoformat(date_str)
@@ -45,16 +48,60 @@ def validate_date(date_str: str) -> bool:
 
 
 def validate_datetime(dt_str: str) -> bool:
-    """Validates if a string is in YYYY-MM-DD HH:MM format."""
+    """Validates if a string is in YYYY-MM-DD HH:MM format or relative."""
     if not dt_str:
         return True
+    val = dt_str.lower().strip()
+    if val in ("today", "yesterday"):
+        return True
+    if val.startswith("today ") or val.startswith("yesterday "):
+        try:
+            time_part = val.split(" ", 1)[1]
+            datetime.strptime(time_part, "%H:%M")
+            return True
+        except (ValueError, IndexError):
+            return False
     try:
-        from datetime import datetime
-
         datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
         return True
     except ValueError:
         return False
+
+
+def resolve_date(date_str: str) -> str:
+    """Resolves 'today', 'yesterday', or YYYY-MM-DD to YYYY-MM-DD."""
+    if not date_str or is_null_string(date_str):
+        return None
+    val = date_str.lower().strip()
+    if val == "today":
+        return date.today().isoformat()
+    if val == "yesterday":
+        return (date.today() - timedelta(days=1)).isoformat()
+    return date_str
+
+
+def resolve_datetime(dt_str: str) -> str:
+    """Resolves 'today [HH:MM]', 'yesterday [HH:MM]', or YYYY-MM-DD HH:MM to canonical format."""
+    if not dt_str or is_null_string(dt_str):
+        return None
+    val = dt_str.lower().strip()
+
+    target_date = None
+    time_part = "12:00"  # Default time if only date is provided
+
+    if val == "today":
+        target_date = date.today()
+    elif val == "yesterday":
+        target_date = date.today() - timedelta(days=1)
+    elif val.startswith("today ") or val.startswith("yesterday "):
+        parts = val.split(" ", 1)
+        target_date = date.today() if parts[0] == "today" else date.today() - timedelta(days=1)
+        time_part = parts[1]
+
+    if target_date:
+        return f"{target_date.isoformat()} {time_part}"
+
+    return dt_str
 
 
 # Mapping of short names used in CLI to actual database column names
@@ -180,8 +227,22 @@ def parse_filter_string(filter_str: str) -> Tuple[str, List[Any]]:
         if range_match:
             col_short, min_val, max_val = range_match.groups()
             col = COLUMN_MAPPING.get(col_short.lower(), col_short)
+            min_val = min_val.strip()
+            max_val = max_val.strip()
+
+            # Resolve 'today' and 'yesterday' for date/datetime columns
+            date_cols = ["date_posted", "date_applied", "application_response_date", "interview_response_date", "followup_date"]
+            datetime_cols = ["interview_time"]
+
+            if col in datetime_cols:
+                min_val = resolve_datetime(min_val)
+                max_val = resolve_datetime(max_val)
+            elif col in date_cols:
+                min_val = resolve_date(min_val)
+                max_val = resolve_date(max_val)
+
             sql_parts.append(f"({col} >= ? AND {col} <= ?)")
-            params.extend([min_val.strip(), max_val.strip()])
+            params.extend([min_val, max_val])
             continue
 
         # Match other operators: ==, !=, >=, <=, >, <, ~, :
@@ -196,6 +257,16 @@ def parse_filter_string(filter_str: str) -> Tuple[str, List[Any]]:
         col_short, op, val = match.groups()
         col = COLUMN_MAPPING.get(col_short.lower(), col_short)
         val = val.strip().strip("'\"")
+
+        # Resolve 'today' and 'yesterday' for date/datetime columns
+        date_cols = ["date_posted", "date_applied", "application_response_date", "interview_response_date", "followup_date"]
+        datetime_cols = ["interview_time"]
+
+        if val.lower() in ("today", "yesterday") or val.lower().startswith("today ") or val.lower().startswith("yesterday "):
+            if col in datetime_cols:
+                val = resolve_datetime(val)
+            elif col in date_cols:
+                val = resolve_date(val)
 
         if op == "==":
             sql_parts.append(f"{col} = ?")

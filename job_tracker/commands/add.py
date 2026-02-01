@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from rich.console import Console
 from job_tracker.database import add_job, update_job, get_job_by_url
 from job_tracker.models import Arrangement, JobType, ExperienceLevel, Source, Status
-from job_tracker.utils import validate_date, validate_datetime, is_null_string, NullableChoice
+from job_tracker.utils import validate_date, validate_datetime, is_null_string, NullableChoice, resolve_date, resolve_datetime
 from pathlib import Path
 
 console = Console()
@@ -100,7 +100,7 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             job_data["date_posted"] = None
             break
         if validate_date(date_posted):
-            job_data["date_posted"] = date_posted
+            job_data["date_posted"] = resolve_date(date_posted)
             break
         console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
@@ -110,7 +110,7 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             job_data["date_applied"] = None
             break
         if validate_date(date_applied_str):
-            job_data["date_applied"] = date_applied_str
+            job_data["date_applied"] = resolve_date(date_applied_str)
             break
         console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
@@ -120,7 +120,7 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             job_data["application_response_date"] = None
             break
         if validate_date(app_response_date):
-            job_data["application_response_date"] = app_response_date
+            job_data["application_response_date"] = resolve_date(app_response_date)
             break
         console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
@@ -130,7 +130,7 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             job_data["interview_response_date"] = None
             break
         if validate_date(int_response_date):
-            job_data["interview_response_date"] = int_response_date
+            job_data["interview_response_date"] = resolve_date(int_response_date)
             break
         console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
@@ -141,7 +141,7 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             job_data["interview_time"] = None
             break
         if validate_datetime(interview_time):
-            job_data["interview_time"] = interview_time
+            job_data["interview_time"] = resolve_datetime(interview_time)
             break
         console.print("[bold red]Error:[/bold red] Invalid format. Please use YYYY-MM-DD HH:MM.")
 
@@ -159,7 +159,7 @@ def add(url: str = typer.Option(None, "--url", help="LinkedIn job post URL")):
             job_data["followup_date"] = None
             break
         if validate_date(followup_date):
-            job_data["followup_date"] = followup_date
+            job_data["followup_date"] = resolve_date(followup_date)
             break
         console.print("[bold red]Error:[/bold red] Invalid date format. Please use YYYY-MM-DD.")
 
