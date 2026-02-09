@@ -319,7 +319,7 @@ def get_visible_columns(show: str = None, hide: str = None, all_cols: bool = Fal
     """
     Determines which columns should be displayed based on show/hide flags.
     """
-    default_cols = ["id", "company", "role", "status", "date"]
+    default_cols = ["id", "company", "role", "status", "fit", "level", "notes"]
 
     if all_cols:
         return list(COLUMN_MAPPING.keys())
