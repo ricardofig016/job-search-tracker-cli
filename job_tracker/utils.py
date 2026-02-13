@@ -8,6 +8,38 @@ from datetime import date, datetime, timedelta
 NULL_STRINGS = ["-", "null", "none", "unknown", "na", "idk"]
 
 
+WEEKDAY_ALIASES = {
+    "monday": 0,
+    "mon": 0,
+    "tuesday": 1,
+    "tue": 1,
+    "tues": 1,
+    "wednesday": 2,
+    "wed": 2,
+    "thursday": 3,
+    "thu": 3,
+    "thurs": 3,
+    "friday": 4,
+    "fri": 4,
+    "saturday": 5,
+    "sat": 5,
+    "sunday": 6,
+    "sun": 6,
+}
+
+
+def _resolve_weekday_date(token: str) -> date:
+    if not token:
+        return None
+    key = token.lower().strip()
+    if key not in WEEKDAY_ALIASES:
+        return None
+    target = WEEKDAY_ALIASES[key]
+    today = date.today()
+    days_ago = (today.weekday() - target) % 7
+    return today - timedelta(days=days_ago)
+
+
 def is_null_string(val: Any) -> bool:
     """Checks if a value is considered 'null' or 'empty' by the user."""
     if val is None:
@@ -34,11 +66,11 @@ class NullableChoice(click.Choice):
 
 
 def validate_date(date_str: str) -> bool:
-    """Validates if a string is in YYYY-MM-DD format or relative ('today', 'yesterday')."""
+    """Validates if a string is in YYYY-MM-DD format or relative ('today', 'yesterday', weekdays)."""
     if not date_str:
         return True
     val = date_str.lower().strip()
-    if val in ("today", "yesterday"):
+    if val in ("today", "yesterday") or _resolve_weekday_date(val):
         return True
     try:
         date.fromisoformat(date_str)
@@ -52,7 +84,7 @@ def validate_datetime(dt_str: str) -> bool:
     if not dt_str:
         return True
     val = dt_str.lower().strip()
-    if val in ("today", "yesterday"):
+    if val in ("today", "yesterday") or _resolve_weekday_date(val):
         return True
     if val.startswith("today ") or val.startswith("yesterday "):
         try:
@@ -61,6 +93,14 @@ def validate_datetime(dt_str: str) -> bool:
             return True
         except (ValueError, IndexError):
             return False
+    for weekday in WEEKDAY_ALIASES:
+        if val.startswith(f"{weekday} "):
+            try:
+                time_part = val.split(" ", 1)[1]
+                datetime.strptime(time_part, "%H:%M")
+                return True
+            except (ValueError, IndexError):
+                return False
     try:
         datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
         return True
@@ -69,7 +109,7 @@ def validate_datetime(dt_str: str) -> bool:
 
 
 def resolve_date(date_str: str) -> str:
-    """Resolves 'today', 'yesterday', or YYYY-MM-DD to YYYY-MM-DD."""
+    """Resolves 'today', 'yesterday', weekdays, or YYYY-MM-DD to YYYY-MM-DD."""
     if not date_str or is_null_string(date_str):
         return None
     val = date_str.lower().strip()
@@ -77,6 +117,9 @@ def resolve_date(date_str: str) -> str:
         return date.today().isoformat()
     if val == "yesterday":
         return (date.today() - timedelta(days=1)).isoformat()
+    weekday_date = _resolve_weekday_date(val)
+    if weekday_date:
+        return weekday_date.isoformat()
     return date_str
 
 
@@ -97,6 +140,16 @@ def resolve_datetime(dt_str: str) -> str:
         parts = val.split(" ", 1)
         target_date = date.today() if parts[0] == "today" else date.today() - timedelta(days=1)
         time_part = parts[1]
+    else:
+        for weekday in WEEKDAY_ALIASES:
+            if val == weekday:
+                target_date = _resolve_weekday_date(weekday)
+                break
+            if val.startswith(f"{weekday} "):
+                parts = val.split(" ", 1)
+                target_date = _resolve_weekday_date(parts[0])
+                time_part = parts[1]
+                break
 
     if target_date:
         return f"{target_date.isoformat()} {time_part}"
@@ -258,15 +311,14 @@ def parse_filter_string(filter_str: str) -> Tuple[str, List[Any]]:
         col = COLUMN_MAPPING.get(col_short.lower(), col_short)
         val = val.strip().strip("'\"")
 
-        # Resolve 'today' and 'yesterday' for date/datetime columns
+        # Resolve relative dates (today, yesterday, weekdays) for date/datetime columns
         date_cols = ["date_posted", "date_applied", "application_response_date", "interview_response_date", "followup_date"]
         datetime_cols = ["interview_time"]
 
-        if val.lower() in ("today", "yesterday") or val.lower().startswith("today ") or val.lower().startswith("yesterday "):
-            if col in datetime_cols:
-                val = resolve_datetime(val)
-            elif col in date_cols:
-                val = resolve_date(val)
+        if col in datetime_cols:
+            val = resolve_datetime(val)
+        elif col in date_cols:
+            val = resolve_date(val)
 
         if op == "==":
             sql_parts.append(f"{col} = ?")
